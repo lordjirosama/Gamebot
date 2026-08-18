@@ -1,0 +1,28 @@
+# main.py
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
+from config import BOT_TOKEN
+from database import init_db
+from handlers import (
+    start_cmd, kill_cmd, duel_cmd, profile_cmd, 
+    shield_cmd, shield_callback, top_cmd
+)
+
+def main():
+    init_db()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start_cmd))
+    app.add_handler(CommandHandler("kill", kill_cmd))
+    app.add_handler(CommandHandler("attack", kill_cmd))
+    app.add_handler(CommandHandler("duel", duel_cmd))
+    app.add_handler(CommandHandler("profile", profile_cmd))
+    app.add_handler(CommandHandler("shield", shield_cmd))
+    app.add_handler(CommandHandler("protect", shield_cmd))
+    app.add_handler(CommandHandler("top", top_cmd))
+    app.add_handler(CallbackQueryHandler(shield_callback, pattern="^buy_shield_"))
+
+    print("🤖 Solurix RPG Game Bot is live and running...")
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
