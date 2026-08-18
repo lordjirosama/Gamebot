@@ -1,0 +1,1 @@
+# Solurix plugins package
