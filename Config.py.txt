@@ -1,9 +1,15 @@
 # config.py
 
-# Bot token from @BotFather
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # Replace with your actual token
+# 1. Telegram Bot Token (@BotFather se)
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
 
-# Solurix Branding
+# 2. Aapka Telegram User ID (Numeric ID)
+OWNER_ID = 123456789  
+
+# 3. Aapke Channel ki ID (-100 se shuru hone wali)
+CHANNEL_ID = -1001234567890  
+
+# 4. Solurix Branding & Links
 CHANNEL_URL = "https://t.me/Solurix_bots"
 CHANNEL_NAME = "ꜱᴏʟᴜʀɪx ʙᴏᴛꜱ"
 FOOTER = f"\n\n⚡ ᴘᴏᴡᴇʀᴇᴅ ʙʏ [{CHANNEL_NAME}]({CHANNEL_URL})"
