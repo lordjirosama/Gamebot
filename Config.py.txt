@@ -1,0 +1,9 @@
+# config.py
+
+# Bot token from @BotFather
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # Replace with your actual token
+
+# Solurix Branding
+CHANNEL_URL = "https://t.me/Solurix_bots"
+CHANNEL_NAME = "ꜱᴏʟᴜʀɪx ʙᴏᴛꜱ"
+FOOTER = f"\n\n⚡ ᴘᴏᴡᴇʀᴇᴅ ʙʏ [{CHANNEL_NAME}]({CHANNEL_URL})"
