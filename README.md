@@ -28,112 +28,100 @@ Solurix is built with a modular plugin-based structure, SQLite database and conf
 
 ## ✨ FEATURES
 
-⚔️ Player Battle System
-🎯 Hunting System
-🏋️ Training System
-🗺 Exploration System
-🎁 Daily Rewards
-🏆 Weekly Rewards
-💰 Coin Economy
-✨ XP System
-⭐ Level System
-👤 Player Profiles
-📊 Player Statistics
-🏅 Group Rankings
-📜 Game History
-🤖 Auto Reply System
-🛠 Owner Controls
-🗄 SQLite Database
-🖼 Custom Image Support
-📋 Telegram Command Menu
-🔧 Modular Plugin Architecture
-🌐 Group-based Progression
+- ⚔️ Player Battle System
+- 🎯 Hunting System
+- 🏋️ Training System
+- 🗺 Exploration System
+- 🎁 Daily Rewards
+- 🏆 Weekly Rewards
+- 💰 Coin Economy
+- ✨ XP System
+- ⭐ Level System
+- 👤 Player Profiles
+- 📊 Player Statistics
+- 🏅 Group Rankings
+- 📜 Game History
+- 🤖 Auto Reply System
+- 🛠 Owner Controls
+- 🗄 SQLite Database
+- 🖼 Custom Image Support
+- 📋 Telegram Command Menu
+- 🔧 Modular Plugin Architecture
+- 🌐 Group-based Progression
 
 ---
 
 ## 🎮 COMMANDS
 
-### 🔰 BASIC
+### 🔰 Basic
 
-/start
-Start Solurix.
-
-/help
-Show all available commands.
-
-/support
-Open Solurix support.
+| Command | Description |
+|---------|--------------|
+| `/start` | Start Solurix. |
+| `/help` | Show all available commands. |
+| `/support` | Open Solurix support. |
 
 ---
 
-### 👤 PROFILE & PLAYER
+### 👤 Profile & Player
 
-/profile
-View your player profile.
-
-/stats
-View detailed player statistics.
-
-/level
-Check your current level and XP.
-
-/coins
-Check your current coin balance.
-
-/history
-View your recent game activity.
+| Command | Description |
+|---------|--------------|
+| `/profile` | View your player profile. |
+| `/stats` | View detailed player statistics. |
+| `/level` | Check your current level and XP. |
+| `/coins` | Check your current coin balance. |
+| `/history` | View your recent game activity. |
 
 ---
 
-### 🎁 REWARDS
+### 🎁 Rewards
 
-/daily
-Claim your daily reward.
-
-/weekly
-Claim your weekly reward.
-
----
-
-### ⚔️ GAME
-
-/battle
-Battle another player and earn rewards.
-
-/hunt
-Go on a hunt and find rewards.
-
-/train
-Train your character and gain XP.
-
-/explore
-Explore the Solurix world and discover rewards.
+| Command | Description |
+|---------|--------------|
+| `/daily` | Claim your daily reward. |
+| `/weekly` | Claim your weekly reward. |
 
 ---
 
-### 🏆 RANKING
+### ⚔️ Game
 
-/rank
-View the leaderboard of your current Telegram group.
+| Command | Description |
+|---------|--------------|
+| `/battle` | Battle another player and earn rewards. |
+| `/hunt` | Go on a hunt and find rewards. |
+| `/train` | Train your character and gain XP. |
+| `/explore` | Explore the Solurix world and discover rewards. |
+
+---
+
+### 🏆 Ranking
+
+| Command | Description |
+|---------|--------------|
+| `/rank` | View the leaderboard of your current Telegram group. |
 
 Every group can have its own Solurix ranking.
 
 ---
 
-### 🛠 OWNER
+### 🛠 Owner
 
-/reset
+**`/reset`**
+
 Reset a player's game progress.
 
 You can reset using a user ID:
-
+```
 /reset USER_ID
+```
 
 Or reply to a user's message with:
-
+```
 /reset
+```
 
-Only the configured OWNER_ID can use this command.
+Only the configured `OWNER_ID` can use this command.
 
 ---
 
@@ -141,11 +129,7 @@ Only the configured OWNER_ID can use this command.
 
 Solurix automatically registers its commands with Telegram.
 
-When you type:
-
-/
-
-Telegram will display the available Solurix commands.
+When you type `/`, Telegram will display the available Solurix commands.
 
 ---
 
@@ -155,6 +139,7 @@ Solurix supports optional Telegram images for different sections.
 
 Available image settings:
 
+```
 START_IMAGE=
 HELP_IMAGE=
 PROFILE_IMAGE=
@@ -164,12 +149,14 @@ DAILY_IMAGE=
 SHOP_IMAGE=
 QUEST_IMAGE=
 EVENT_IMAGE=
+```
 
-You can add Telegram file_id values later.
+You can add Telegram `file_id` values later.
 
 Example:
-
+```
 START_IMAGE=YOUR_TELEGRAM_FILE_ID
+```
 
 If an image is not configured, Solurix automatically uses the normal text interface.
 
@@ -177,10 +164,11 @@ If an image is not configured, Solurix automatically uses the normal text interf
 
 ## ⚙️ CONFIGURATION
 
-Create a .env file in the project root.
+Create a `.env` file in the project root.
 
 Required configuration:
 
+```env
 BOT_TOKEN=YOUR_BOT_TOKEN
 OWNER_ID=YOUR_TELEGRAM_USER_ID
 
@@ -231,8 +219,9 @@ AUTO_REPLY_COOLDOWN=20
 SET_COMMANDS=True
 
 LOG_LEVEL=INFO
+```
 
-Never publish your real BOT_TOKEN.
+⚠️ Never publish your real `BOT_TOKEN`.
 
 ---
 
@@ -241,25 +230,26 @@ Never publish your real BOT_TOKEN.
 Solurix uses SQLite as its database.
 
 Default database:
-
+```
 data/solurix.db
+```
 
 The database stores:
 
-👤 User profiles
-💰 Coins
-✨ XP
-⭐ Levels
-⚔️ Battles
-🏆 Wins
-❌ Losses
-🎯 Hunts
-💬 Messages
-🏅 Group memberships
-⏳ Cooldowns
-🎁 Daily rewards
-🏆 Weekly rewards
-📜 Game history
+- 👤 User profiles
+- 💰 Coins
+- ✨ XP
+- ⭐ Levels
+- ⚔️ Battles
+- 🏆 Wins
+- ❌ Losses
+- 🎯 Hunts
+- 💬 Messages
+- 🏅 Group memberships
+- ⏳ Cooldowns
+- 🎁 Daily rewards
+- 🏆 Weekly rewards
+- 📜 Game history
 
 The database is automatically created when Solurix starts.
 
@@ -267,49 +257,56 @@ The database is automatically created when Solurix starts.
 
 ## 📦 INSTALLATION
 
-### 1. Clone the repository
-
+**1. Clone the repository**
+```
 git clone https://github.com/lordjirosama/Gamebot.git
+```
 
-### 2. Enter the project
-
+**2. Enter the project**
+```
 cd Gamebot
+```
 
-### 3. Check Python
-
+**3. Check Python**
+```
 python3 --version
-
+```
 Python 3.10+ is recommended.
 
-### 4. Create virtual environment
-
+**4. Create virtual environment**
+```
 python3 -m venv venv
+```
 
-### 5. Activate virtual environment
-
+**5. Activate virtual environment**
+```
 source venv/bin/activate
+```
 
-### 6. Install dependencies
-
+**6. Install dependencies**
+```
 pip install -r requirements.txt
+```
 
-### 7. Create .env
-
+**7. Create .env**
+```
 cp .env.example .env
+```
 
-### 8. Edit configuration
-
+**8. Edit configuration**
+```
 nano .env
-
-Add your real BOT_TOKEN and OWNER_ID.
+```
+Add your real `BOT_TOKEN` and `OWNER_ID`.
 
 ---
 
 ## 🚀 START BOT
 
 Run:
-
+```
 python3 bot.py
+```
 
 If the configuration is correct, Solurix will connect to Telegram.
 
@@ -320,20 +317,20 @@ If the configuration is correct, Solurix will connect to Telegram.
 Solurix can be hosted on a Linux VPS.
 
 Create a screen session:
-
+```
 screen -S solurix
+```
 
 Start the bot:
-
+```
 python3 bot.py
+```
 
 Detach from screen:
-
+```
 CTRL + A
-
-Then press:
-
 D
+```
 
 The bot will continue running in the background.
 
@@ -341,36 +338,34 @@ The bot will continue running in the background.
 
 ## 🔄 RECONNECT TO BOT
 
+```
 screen -r solurix
+```
 
 ---
 
 ## 🛑 STOP BOT
 
+```
 screen -r solurix
-
-Then press:
-
-CTRL + C
+```
+Then press `CTRL + C`.
 
 ---
 
 ## 🔁 RESTART BOT
 
+```
 screen -r solurix
-
-Stop the running process:
-
-CTRL + C
-
-Start again:
-
-python3 bot.py
+```
+Stop the running process: `CTRL + C`
+Start again: `python3 bot.py`
 
 ---
 
 ## 📁 PROJECT STRUCTURE
 
+```
 Gamebot/
 │
 ├── bot.py
@@ -404,6 +399,7 @@ Gamebot/
     ├── history.py
     ├── explore.py
     └── train.py
+```
 
 ---
 
@@ -413,31 +409,16 @@ Solurix uses a modular plugin architecture.
 
 Each major feature has its own plugin.
 
-Examples:
-
-battle.py
-Handles player battles.
-
-hunt.py
-Handles hunting.
-
-train.py
-Handles training.
-
-explore.py
-Handles exploration.
-
-daily.py
-Handles daily rewards.
-
-weekly.py
-Handles weekly rewards.
-
-profile.py
-Handles player profiles.
-
-ranking.py
-Handles group rankings.
+| Plugin | Description |
+|--------|-------------|
+| `battle.py` | Handles player battles. |
+| `hunt.py` | Handles hunting. |
+| `train.py` | Handles training. |
+| `explore.py` | Handles exploration. |
+| `daily.py` | Handles daily rewards. |
+| `weekly.py` | Handles weekly rewards. |
+| `profile.py` | Handles player profiles. |
+| `ranking.py` | Handles group rankings. |
 
 This makes Solurix easier to maintain and expand.
 
@@ -445,6 +426,7 @@ This makes Solurix easier to maintain and expand.
 
 ## 🎯 GAME FLOW
 
+```
 START
   ↓
 Create Player
@@ -458,6 +440,7 @@ Claim Daily / Weekly Rewards
 Level Up
   ↓
 Compete in Group Ranking
+```
 
 ---
 
@@ -475,11 +458,9 @@ Each group can have its own leaderboard and competition.
 
 Players can earn virtual rewards from different activities.
 
-Daily rewards provide coins and XP.
-
-Weekly rewards provide larger rewards.
-
-Battles, hunts and exploration can also provide virtual coins and XP.
+- Daily rewards provide coins and XP.
+- Weekly rewards provide larger rewards.
+- Battles, hunts and exploration can also provide virtual coins and XP.
 
 All rewards are part of the fictional game economy.
 
@@ -490,12 +471,14 @@ All rewards are part of the fictional game economy.
 Solurix includes an optional group auto-reply system.
 
 Enable it using:
-
+```
 AUTO_REPLY_ENABLED=True
+```
 
 Configure the cooldown using:
-
+```
 AUTO_REPLY_COOLDOWN=20
+```
 
 The cooldown prevents the bot from replying repeatedly within a short period.
 
@@ -503,14 +486,15 @@ The cooldown prevents the bot from replying repeatedly within a short period.
 
 ## 🔐 SECURITY
 
-Never upload your real .env file to GitHub.
+Never upload your real `.env` file to GitHub.
 
-Your .env contains sensitive information including:
-
+Your `.env` contains sensitive information including:
+```
 BOT_TOKEN
 OWNER_ID
+```
 
-The .gitignore file protects the .env file from accidental Git commits.
+The `.gitignore` file protects the `.env` file from accidental Git commits.
 
 If your Telegram bot token is exposed, regenerate it immediately using BotFather.
 
@@ -518,53 +502,46 @@ If your Telegram bot token is exposed, regenerate it immediately using BotFather
 
 ## 👑 OWNER
 
-Jiro
+**Jiro**
 
-Telegram:
-https://t.me/senpain_jiro
-
-Username:
-@senpain_jiro
+Telegram: https://t.me/senpain_jiro
+Username: `@senpain_jiro`
 
 ---
 
 ## 📢 OFFICIAL CHANNEL
 
-Solurix Bots
+**Solurix Bots**
 
 https://t.me/Solurix_bots
 
 Get:
-
-📢 Updates
-🆕 New features
-🔧 Fixes
-📣 Announcements
-⚔️ Game updates
+- 📢 Updates
+- 🆕 New features
+- 🔧 Fixes
+- 📣 Announcements
+- ⚔️ Game updates
 
 ---
 
 ## 💬 SUPPORT GROUP
 
-Solurix Support Group
+**Solurix Support Group**
 
 https://t.me/Solurix_Support_Group
 
 Use the support group for:
-
-🐛 Bug reports
-💡 Suggestions
-❓ Questions
-🛠 Technical help
-📢 Feedback
+- 🐛 Bug reports
+- 💡 Suggestions
+- ❓ Questions
+- 🛠 Technical help
+- 📢 Feedback
 
 ---
 
 ## 📦 SOURCE CODE
 
-GitHub Repository:
-
-https://github.com/lordjirosama/Gamebot
+GitHub Repository: https://github.com/lordjirosama/Gamebot
 
 ---
 
@@ -572,9 +549,7 @@ https://github.com/lordjirosama/Gamebot
 
 Solurix is a fictional Telegram RPG game created for entertainment and community interaction.
 
-All coins, XP, levels, rewards, battles and rankings are virtual game elements.
-
-They have no real-world monetary value.
+All coins, XP, levels, rewards, battles and rankings are virtual game elements. They have no real-world monetary value.
 
 ---
 
@@ -582,21 +557,20 @@ They have no real-world monetary value.
 
 Developed and maintained by:
 
-Jiro
+**Jiro**
 
-Telegram:
-@senpain_jiro
-
-Official Channel:
-https://t.me/Solurix_bots
-
-Support Group:
-https://t.me/Solurix_Support_Group
+Telegram: `@senpain_jiro`
+Official Channel: https://t.me/Solurix_bots
+Support Group: https://t.me/Solurix_Support_Group
 
 ---
 
+<div align="center">
+
 # ⚔️ SOLURIX
 
-Battle • Hunt • Train • Explore • Level Up
+**Battle • Hunt • Train • Explore • Level Up**
 
 🔥 Your adventure begins here.
+
+</div>
