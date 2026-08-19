@@ -1,114 +1,185 @@
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from telegram.ext import ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 
 from config import (
-    BRAND_CHANNEL,
+    HELP_IMAGE,
+    SUPPORT_CHANNEL,
     SUPPORT_GROUP,
 )
 
 
-async def start(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
+# ============================================================
+# HELP TEXT
+# ============================================================
+
+HELP_TEXT = """
+<b>Solurix — Help & Commands</b> ⚔️
+
+<b>🎮 Basic</b>
+/start — Start Solurix
+/help — Show this help menu
+
+<b>👤 Profile</b>
+/profile — View your profile
+/stats — View your statistics
+/rank — View the group ranking
+/level — Check your level
+/coins — Check your coins
+/history — View your game history
+
+<b>🎁 Rewards</b>
+/daily — Claim your daily reward
+/weekly — Claim your weekly reward
+
+<b>⚔️ Game</b>
+/battle — Battle another player
+/hunt — Go on a hunt
+/train — Train your character
+/explore — Explore the world
+
+<b>🛠 Admin</b>
+/reset — Reset a player's progress
+
+<b>💬 Support</b>
+If you find a bug or something doesn't work correctly,
+please contact us through the support group.
+"""
+
+
+# ============================================================
+# HELP KEYBOARD
+# ============================================================
+
+def help_keyboard() -> InlineKeyboardMarkup:
+
     keyboard = [
         [
             InlineKeyboardButton(
-                "Solurix Bots",
-                url=BRAND_CHANNEL,
-            )
-        ],
-        [
+                "Sᴜᴘᴘᴏʀᴛ Cʜᴀɴɴᴇʟ",
+                url=SUPPORT_CHANNEL,
+            ),
             InlineKeyboardButton(
-                "Support Group",
+                "Sᴜᴘᴘᴏʀᴛ Gʀᴏᴜᴘ",
                 url=SUPPORT_GROUP,
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "Add me in your group",
-                url=(
-                    "https://t.me/"
-                    "SolurixGameBot"
-                    "?startgroup=true"
-                ),
-            )
+            ),
         ],
     ]
 
-    text = (
-        "<b>Welcome to Solurix</b>\n\n"
-        "Enter the RPG arena, earn XP, "
-        "collect coins, eliminate rivals, "
-        "and climb your group leaderboard.\n\n"
-
-        "<b>Quick Commands</b>\n"
-        "/profile — View your profile\n"
-        "/daily — Claim your daily reward\n"
-        "/kill — Eliminate another player\n"
-        "/protect — Activate protection\n"
-        "/rank — View group ranking\n"
-        "/help — Show all commands\n\n"
-
-        "Use /help to see the complete "
-        "command guide."
-    )
-
-    await update.message.reply_html(
-        text,
-        reply_markup=InlineKeyboardMarkup(
-            keyboard
-        ),
-        disable_web_page_preview=True,
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
-async def help_cmd(
+# ============================================================
+# /HELP
+# ============================================================
+
+async def help_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
-):
-    text = (
-        "<b>Solurix Command Guide</b>\n\n"
+) -> None:
 
-        "<b>Player Commands</b>\n"
-        "/profile — Your profile and stats\n"
-        "/me — Your profile\n"
-        "/stats — Detailed statistics\n"
-        "/coins — Check your coins\n"
-        "/level — Check your level\n\n"
+    keyboard = help_keyboard()
 
-        "<b>Game Commands</b>\n"
-        "/daily — Claim your daily reward\n"
-        "/kill — Eliminate another player\n"
-        "/protect — Activate protection\n"
-        "/train — Train and earn XP\n"
-        "/explore — Explore and find rewards\n\n"
+    # --------------------------------------------------------
+    # WITH IMAGE
+    # --------------------------------------------------------
 
-        "<b>Ranking</b>\n"
-        "/rank — Group leaderboard\n"
-        "/ranking — Group leaderboard\n\n"
+    if HELP_IMAGE:
 
-        "<b>Admin Commands</b>\n"
-        "/reset — Reset group game data\n"
-        "/broadcast — Broadcast a message\n\n"
+        try:
+            await update.message.reply_photo(
+                photo=HELP_IMAGE,
+                caption=HELP_TEXT,
+                reply_markup=keyboard,
+                parse_mode="HTML",
+            )
+            return
 
-        "<b>Protection</b>\n"
-        "/protect 1h — 149 Coins\n"
-        "/protect 12h — 500 Coins\n"
-        "/protect 24h — 900 Coins\n\n"
+        except Exception:
+            pass
 
-        "<b>Kill System</b>\n"
-        "Reply to a player's message and use "
-        "/kill to eliminate them.\n"
-        "Each player can kill once every 24 hours.\n"
-        "Protected players cannot be eliminated."
+    # --------------------------------------------------------
+    # WITHOUT IMAGE
+    # --------------------------------------------------------
+
+    await update.message.reply_text(
+        HELP_TEXT,
+        reply_markup=keyboard,
+        parse_mode="HTML",
     )
 
-    await update.message.reply_html(
-        text,
-        disable_web_page_preview=True,
+
+# ============================================================
+# HELP CALLBACK
+# ============================================================
+
+async def help_callback(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+
+    query = update.callback_query
+
+    if not query:
+        return
+
+    await query.answer()
+
+    keyboard = help_keyboard()
+
+    # --------------------------------------------------------
+    # If help image is configured
+    # --------------------------------------------------------
+
+    if HELP_IMAGE:
+
+        try:
+            await query.message.delete()
+
+            await query.message.chat.send_photo(
+                photo=HELP_IMAGE,
+                caption=HELP_TEXT,
+                reply_markup=keyboard,
+                parse_mode="HTML",
+            )
+
+            return
+
+        except Exception:
+            pass
+
+    # --------------------------------------------------------
+    # Normal text help
+    # --------------------------------------------------------
+
+    try:
+
+        await query.edit_message_text(
+            HELP_TEXT,
+            reply_markup=keyboard,
+            parse_mode="HTML",
+        )
+
+    except Exception:
+        pass
+
+
+# ============================================================
+# PLUGIN SETUP
+# ============================================================
+
+def setup(application) -> None:
+    """Register help handlers."""
+
+    application.add_handler(
+        CommandHandler(
+            "help",
+            help_command,
+        )
+    )
+
+    application.add_handler(
+        CallbackQueryHandler(
+            help_callback,
+            pattern=r"^help_menu$",
+        )
     )
