@@ -1,13 +1,18 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import ContextTypes, CommandHandler
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Update,
+)
+from telegram.ext import (
+    ContextTypes,
+    CommandHandler,
+)
 
 from config import (
     BOT_NAME,
     SUPPORT_CHANNEL,
     SUPPORT_GROUP,
     OWNER_USERNAME,
-    OWNER_LINK,
-    REPOSITORY_URL,
     START_IMAGE,
 )
 
@@ -19,19 +24,25 @@ from database import ensure_user
 # ============================================================
 
 START_TEXT = """
-<b>Welcome to Solurix</b> ⚔️
+<b>⚔️ Welcome to Solurix!</b>
 
-A fictional RPG game for Telegram groups.
+Hello, {name}! 👋
 
-🎮 Play games
-⚔️ Battle players
-🗺 Explore the world
-🎯 Hunt for rewards
-💰 Earn coins
-⭐ Gain XP and level up
-🏆 Compete in group rankings
+Solurix is a group-based RPG game where you can
+battle, hunt, train, explore, earn coins and level up.
 
-Use the buttons below or type /help to see all available commands.
+<b>🎮 What you can do:</b>
+• ⚔️ Battle other players
+• 🎯 Go on hunts
+• 🏋️ Train your character
+• 🗺 Explore the world
+• 🎁 Claim daily & weekly rewards
+• 🏆 Compete on the group leaderboard
+• ⭐ Level up and gain XP
+
+Type /help to see all available commands.
+
+<b>👑 Owner:</b> {owner}
 """
 
 
@@ -54,19 +65,7 @@ def start_keyboard() -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(
-                f"Oᴡɴᴇʀ {OWNER_USERNAME}",
-                url=OWNER_LINK,
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                "GɪᴛHᴜʙ Rᴇᴘᴏsɪᴛᴏʀʏ",
-                url=REPOSITORY_URL,
-            ),
-        ],
-        [
-            InlineKeyboardButton(
-                "Hᴇʟᴘ",
+                "📖 Hᴇʟᴘ",
                 callback_data="help_menu",
             ),
         ],
@@ -86,14 +85,22 @@ async def start_command(
 
     user = update.effective_user
 
-    if not user:
+    if not user or not update.message:
         return
 
-    # Register player
+    # --------------------------------------------------------
+    # REGISTER USER
+    # --------------------------------------------------------
+
     ensure_user(
         user_id=user.id,
         username=user.username or "",
         first_name=user.first_name or "",
+    )
+
+    text = START_TEXT.format(
+        name=user.first_name or "Player",
+        owner=OWNER_USERNAME,
     )
 
     keyboard = start_keyboard()
@@ -105,12 +112,14 @@ async def start_command(
     if START_IMAGE:
 
         try:
+
             await update.message.reply_photo(
                 photo=START_IMAGE,
-                caption=START_TEXT,
+                caption=text,
                 reply_markup=keyboard,
                 parse_mode="HTML",
             )
+
             return
 
         except Exception:
@@ -121,7 +130,7 @@ async def start_command(
     # --------------------------------------------------------
 
     await update.message.reply_text(
-        START_TEXT,
+        text,
         reply_markup=keyboard,
         parse_mode="HTML",
     )
