@@ -6,20 +6,49 @@ from telegram import (
     BotCommandScopeAllGroupChats,
     BotCommandScopeAllPrivateChats,
 )
-from telegram.ext import Application, CommandHandler
+from telegram.ext import (
+    Application,
+    CommandHandler,
+)
 
 from config import TOKEN
 from database import init_db
 
-from plugins.profile import profile, stats, coins, level
-from plugins.game import daily, kill, protect, train, explore
+from plugins.profile import (
+    profile,
+    stats,
+    coins,
+    level,
+)
+
+from plugins.game import (
+    daily,
+    kill,
+    protect,
+    train,
+    explore,
+)
+
 from plugins.ranking import rank
-from plugins.admin import reset
-from plugins.help import help_cmd, start
+
+from plugins.admin import (
+    reset,
+    broadcast,
+)
+
+from plugins.help import (
+    help_cmd,
+    start,
+)
 
 
 logging.basicConfig(
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    format=(
+        "%(asctime)s | "
+        "%(levelname)s | "
+        "%(name)s | "
+        "%(message)s"
+    ),
     level=logging.INFO,
 )
 
@@ -29,16 +58,19 @@ logger = logging.getLogger("solurix")
 PLAYER_COMMANDS = [
     BotCommand("start", "Start Solurix"),
     BotCommand("help", "Show all commands"),
+
     BotCommand("profile", "View your profile"),
     BotCommand("me", "View your profile"),
-    BotCommand("stats", "View your game statistics"),
+    BotCommand("stats", "View your statistics"),
     BotCommand("coins", "Check your coins"),
     BotCommand("level", "Check your level"),
+
     BotCommand("daily", "Claim your daily reward"),
     BotCommand("kill", "Eliminate another player"),
-    BotCommand("protect", "Protect yourself"),
+    BotCommand("protect", "Activate protection"),
     BotCommand("train", "Train and earn XP"),
     BotCommand("explore", "Explore and find rewards"),
+
     BotCommand("rank", "View group ranking"),
     BotCommand("ranking", "View group leaderboard"),
 ]
@@ -46,10 +78,13 @@ PLAYER_COMMANDS = [
 
 ADMIN_COMMANDS = PLAYER_COMMANDS + [
     BotCommand("reset", "Reset this group's game data"),
+    BotCommand("broadcast", "Broadcast a message"),
 ]
 
 
-async def setup_commands(app: Application):
+async def setup_commands(
+    app: Application,
+):
     await app.bot.set_my_commands(
         PLAYER_COMMANDS,
         scope=BotCommandScopeAllPrivateChats(),
@@ -66,9 +101,11 @@ async def setup_commands(app: Application):
 
 
 def main():
+
     if not TOKEN:
         raise RuntimeError(
-            "BOT_TOKEN is missing. Put it in your .env file."
+            "BOT_TOKEN is missing. "
+            "Put it in your .env file."
         )
 
     init_db()
@@ -143,6 +180,10 @@ def main():
     # Admin
     app.add_handler(
         CommandHandler("reset", reset)
+    )
+
+    app.add_handler(
+        CommandHandler("broadcast", broadcast)
     )
 
     logger.info(
