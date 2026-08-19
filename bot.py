@@ -6,13 +6,31 @@ from telegram import (
     BotCommandScopeAllGroupChats,
     BotCommandScopeAllPrivateChats,
 )
-from telegram.ext import Application, CommandHandler
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+)
 
 from config import TOKEN
 from database import init_db
 
-from plugins.profile import profile, stats, coins, level
-from plugins.game import daily, battle, train, explore
+from plugins.profile import (
+    profile,
+    stats,
+    coins,
+    level,
+)
+
+from plugins.game import (
+    daily,
+    kill,
+    protect,
+    protection_callback,
+    train,
+    explore,
+)
+
 from plugins.ranking import rank
 from plugins.admin import reset
 from plugins.help import help_cmd, start
@@ -26,7 +44,6 @@ logging.basicConfig(
 logger = logging.getLogger("solurix")
 
 
-# Commands shown when users type "/" in Telegram
 PLAYER_COMMANDS = [
     BotCommand("start", "Start Solurix"),
     BotCommand("help", "Show all commands"),
@@ -36,12 +53,14 @@ PLAYER_COMMANDS = [
     BotCommand("coins", "Check your coins"),
     BotCommand("level", "Check your level"),
     BotCommand("daily", "Claim your daily reward"),
-    BotCommand("battle", "Enter a random battle"),
+    BotCommand("kill", "Eliminate another player"),
+    BotCommand("protect", "Protect yourself"),
     BotCommand("train", "Train and earn XP"),
     BotCommand("explore", "Explore and find rewards"),
     BotCommand("rank", "View group ranking"),
     BotCommand("ranking", "View group leaderboard"),
 ]
+
 
 ADMIN_COMMANDS = PLAYER_COMMANDS + [
     BotCommand("reset", "Reset this group's game data"),
@@ -49,22 +68,24 @@ ADMIN_COMMANDS = PLAYER_COMMANDS + [
 
 
 async def setup_commands(app: Application):
-    # Private chat command menu
+
     await app.bot.set_my_commands(
         PLAYER_COMMANDS,
         scope=BotCommandScopeAllPrivateChats(),
     )
 
-    # Group chat command menu
     await app.bot.set_my_commands(
         PLAYER_COMMANDS,
         scope=BotCommandScopeAllGroupChats(),
     )
 
-    logger.info("Telegram command menus configured.")
+    logger.info(
+        "Telegram command menus configured."
+    )
 
 
 def main():
+
     if not TOKEN:
         raise RuntimeError(
             "BOT_TOKEN is missing. Put it in your .env file."
@@ -80,30 +101,81 @@ def main():
     )
 
     # Basic
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(
+        CommandHandler("start", start)
+    )
+
+    app.add_handler(
+        CommandHandler("help", help_cmd)
+    )
 
     # Profile
-    app.add_handler(CommandHandler("profile", profile))
-    app.add_handler(CommandHandler("me", profile))
-    app.add_handler(CommandHandler("stats", stats))
-    app.add_handler(CommandHandler("coins", coins))
-    app.add_handler(CommandHandler("level", level))
+    app.add_handler(
+        CommandHandler("profile", profile)
+    )
+
+    app.add_handler(
+        CommandHandler("me", profile)
+    )
+
+    app.add_handler(
+        CommandHandler("stats", stats)
+    )
+
+    app.add_handler(
+        CommandHandler("coins", coins)
+    )
+
+    app.add_handler(
+        CommandHandler("level", level)
+    )
 
     # Game
-    app.add_handler(CommandHandler("daily", daily))
-    app.add_handler(CommandHandler("battle", battle))
-    app.add_handler(CommandHandler("train", train))
-    app.add_handler(CommandHandler("explore", explore))
+    app.add_handler(
+        CommandHandler("daily", daily)
+    )
+
+    app.add_handler(
+        CommandHandler("kill", kill)
+    )
+
+    app.add_handler(
+        CommandHandler("protect", protect)
+    )
+
+    app.add_handler(
+        CommandHandler("train", train)
+    )
+
+    app.add_handler(
+        CommandHandler("explore", explore)
+    )
+
+    # Protection buttons
+    app.add_handler(
+        CallbackQueryHandler(
+            protection_callback,
+            pattern=r"^protect_(1|12|24)$",
+        )
+    )
 
     # Ranking
-    app.add_handler(CommandHandler("rank", rank))
-    app.add_handler(CommandHandler("ranking", rank))
+    app.add_handler(
+        CommandHandler("rank", rank)
+    )
+
+    app.add_handler(
+        CommandHandler("ranking", rank)
+    )
 
     # Admin
-    app.add_handler(CommandHandler("reset", reset))
+    app.add_handler(
+        CommandHandler("reset", reset)
+    )
 
-    logger.info("Solurix is starting...")
+    logger.info(
+        "Solurix is starting..."
+    )
 
     app.run_polling(
         allowed_updates=Update.ALL_TYPES
