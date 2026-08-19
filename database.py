@@ -1,23 +1,20 @@
 import os
 import sqlite3
-
 from config import DB_PATH
 
 
 def connect():
     os.makedirs(
         os.path.dirname(DB_PATH) or ".",
-        exist_ok=True,
+        exist_ok=True
     )
 
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
-
     return con
 
 
 def init_db():
-
     with connect() as con:
 
         con.execute("""
@@ -29,7 +26,6 @@ def init_db():
 
             xp INTEGER NOT NULL DEFAULT 0,
             level INTEGER NOT NULL DEFAULT 1,
-
             coins INTEGER NOT NULL DEFAULT 100,
             points INTEGER NOT NULL DEFAULT 0,
 
@@ -40,20 +36,19 @@ def init_db():
             deaths INTEGER NOT NULL DEFAULT 0,
 
             last_daily TEXT,
-
+            last_kill TEXT,
             protected_until TEXT,
-            kill_cooldown_until TEXT,
 
             PRIMARY KEY (user_id, chat_id)
         )
         """)
 
-        # Add missing columns to old databases
+        # Existing databases ke liye new columns
         columns = {
             "kills": "INTEGER NOT NULL DEFAULT 0",
             "deaths": "INTEGER NOT NULL DEFAULT 0",
+            "last_kill": "TEXT",
             "protected_until": "TEXT",
-            "kill_cooldown_until": "TEXT",
         }
 
         existing = {
@@ -63,12 +58,11 @@ def init_db():
             ).fetchall()
         }
 
-        for name, definition in columns.items():
-
-            if name not in existing:
+        for column, definition in columns.items():
+            if column not in existing:
                 con.execute(
                     f"ALTER TABLE players ADD COLUMN "
-                    f"{name} {definition}"
+                    f"{column} {definition}"
                 )
 
         con.commit()
@@ -80,9 +74,7 @@ def ensure_player(
     username,
     name,
 ):
-
     with connect() as con:
-
         con.execute("""
         INSERT INTO players(
             user_id,
@@ -91,7 +83,6 @@ def ensure_player(
             name
         )
         VALUES(?,?,?,?)
-
         ON CONFLICT(user_id, chat_id)
         DO UPDATE SET
             username=excluded.username,
@@ -110,9 +101,7 @@ def get_player(
     user_id,
     chat_id,
 ):
-
     with connect() as con:
-
         return con.execute(
             """
             SELECT *
@@ -123,22 +112,8 @@ def get_player(
             (
                 user_id,
                 chat_id,
-            ),
+            )
         ).fetchone()
-
-
-def get_group_players(chat_id):
-
-    with connect() as con:
-
-        return con.execute(
-            """
-            SELECT *
-            FROM players
-            WHERE chat_id=?
-            """,
-            (chat_id,),
-        ).fetchall()
 
 
 def add_progress(
@@ -149,10 +124,7 @@ def add_progress(
     points=0,
     win=False,
     loss=False,
-    kill=False,
-    death=False,
 ):
-
     player = get_player(
         user_id,
         chat_id,
@@ -162,14 +134,12 @@ def add_progress(
         return
 
     new_xp = player["xp"] + xp
-
     new_level = max(
         1,
-        new_xp // 100 + 1,
+        new_xp // 100 + 1
     )
 
     with connect() as con:
-
         con.execute("""
         UPDATE players
         SET
@@ -178,10 +148,7 @@ def add_progress(
             coins=coins+?,
             points=points+?,
             wins=wins+?,
-            losses=losses+?,
-            kills=kills+?,
-            deaths=deaths+?
-
+            losses=losses+?
         WHERE user_id=?
         AND chat_id=?
         """, (
@@ -191,61 +158,9 @@ def add_progress(
             points,
             int(win),
             int(loss),
-            int(kill),
-            int(death),
             user_id,
             chat_id,
         ))
-
-        con.commit()
-
-
-def update_coins(
-    user_id,
-    chat_id,
-    amount,
-):
-
-    with connect() as con:
-
-        con.execute(
-            """
-            UPDATE players
-            SET coins = MAX(0, coins + ?)
-            WHERE user_id=?
-            AND chat_id=?
-            """,
-            (
-                amount,
-                user_id,
-                chat_id,
-            ),
-        )
-
-        con.commit()
-
-
-def update_points(
-    user_id,
-    chat_id,
-    amount,
-):
-
-    with connect() as con:
-
-        con.execute(
-            """
-            UPDATE players
-            SET points = MAX(0, points + ?)
-            WHERE user_id=?
-            AND chat_id=?
-            """,
-            (
-                amount,
-                user_id,
-                chat_id,
-            ),
-        )
 
         con.commit()
 
@@ -255,9 +170,7 @@ def set_daily(
     chat_id,
     stamp,
 ):
-
     with connect() as con:
-
         con.execute(
             """
             UPDATE players
@@ -269,7 +182,30 @@ def set_daily(
                 stamp,
                 user_id,
                 chat_id,
-            ),
+            )
+        )
+
+        con.commit()
+
+
+def set_kill_time(
+    user_id,
+    chat_id,
+    stamp,
+):
+    with connect() as con:
+        con.execute(
+            """
+            UPDATE players
+            SET last_kill=?
+            WHERE user_id=?
+            AND chat_id=?
+            """,
+            (
+                stamp,
+                user_id,
+                chat_id,
+            )
         )
 
         con.commit()
@@ -278,11 +214,9 @@ def set_daily(
 def set_protection(
     user_id,
     chat_id,
-    expires,
+    until,
 ):
-
     with connect() as con:
-
         con.execute(
             """
             UPDATE players
@@ -291,36 +225,52 @@ def set_protection(
             AND chat_id=?
             """,
             (
-                expires,
+                until,
                 user_id,
                 chat_id,
-            ),
+            )
         )
 
         con.commit()
 
 
-def set_kill_cooldown(
-    user_id,
-    chat_id,
-    expires,
+def record_kill(
+    killer_id,
+    killer_chat_id,
+    target_id,
+    target_chat_id,
+    coins,
+    points,
 ):
-
     with connect() as con:
 
-        con.execute(
-            """
-            UPDATE players
-            SET kill_cooldown_until=?
-            WHERE user_id=?
-            AND chat_id=?
-            """,
-            (
-                expires,
-                user_id,
-                chat_id,
-            ),
-        )
+        con.execute("""
+        UPDATE players
+        SET
+            coins=coins+?,
+            points=points+?,
+            kills=kills+1
+        WHERE user_id=?
+        AND chat_id=?
+        """, (
+            coins,
+            points,
+            killer_id,
+            killer_chat_id,
+        ))
+
+        con.execute("""
+        UPDATE players
+        SET
+            coins=0,
+            points=0,
+            deaths=deaths+1
+        WHERE user_id=?
+        AND chat_id=?
+        """, (
+            target_id,
+            target_chat_id,
+        ))
 
         con.commit()
 
@@ -329,36 +279,27 @@ def top_players(
     chat_id,
     limit=10,
 ):
-
     with connect() as con:
-
-        return con.execute(
-            """
-            SELECT *
-            FROM players
-            WHERE chat_id=?
-
-            ORDER BY
-                points DESC,
-                level DESC,
-                xp DESC
-
-            LIMIT ?
-            """,
-            (
-                chat_id,
-                limit,
-            ),
-        ).fetchall()
+        return con.execute("""
+        SELECT *
+        FROM players
+        WHERE chat_id=?
+        ORDER BY
+            points DESC,
+            level DESC,
+            xp DESC
+        LIMIT ?
+        """, (
+            chat_id,
+            limit,
+        )).fetchall()
 
 
 def reset_chat(chat_id):
-
     with connect() as con:
-
         con.execute(
             "DELETE FROM players WHERE chat_id=?",
-            (chat_id,),
+            (chat_id,)
         )
 
         con.commit()
