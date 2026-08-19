@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -17,6 +19,39 @@ def xp_bar(xp, size=10):
         "▰" * filled
         + "▱" * (size - filled)
     )
+
+
+def get_remaining_time(stamp):
+    if not stamp:
+        return None
+
+    try:
+        target = datetime.fromisoformat(stamp)
+
+        if target.tzinfo is None:
+            target = target.replace(
+                tzinfo=timezone.utc
+            )
+
+        remaining = (
+            target -
+            datetime.now(timezone.utc)
+        )
+
+        if remaining.total_seconds() <= 0:
+            return None
+
+        total_minutes = int(
+            remaining.total_seconds() // 60
+        )
+
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+
+        return hours, minutes
+
+    except ValueError:
+        return None
 
 
 def get_player_data(update):
@@ -44,23 +79,44 @@ async def profile(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ):
-
     user, chat, player = get_player_data(
         update
     )
 
     total_games = (
-        player["wins"]
-        + player["losses"]
+        player["wins"] +
+        player["losses"]
     )
 
     winrate = (
-        player["wins"]
-        / total_games
-        * 100
+        player["wins"] /
+        total_games *
+        100
         if total_games
         else 0
     )
+
+    protection = get_remaining_time(
+        player["protected_until"]
+    )
+
+    kill_cooldown = get_remaining_time(
+        player["last_kill"]
+    )
+
+    protection_text = (
+        f"{protection[0]}h {protection[1]}m"
+        if protection
+        else "Not active"
+    )
+
+    if kill_cooldown:
+        kill_text = (
+            f"{kill_cooldown[0]}h "
+            f"{kill_cooldown[1]}m"
+        )
+    else:
+        kill_text = "Available"
 
     text = (
         "<b>PLAYER PROFILE</b>\n\n"
@@ -73,9 +129,10 @@ async def profile(
 
         f"Wins: <b>{player['wins']}</b>\n"
         f"Losses: <b>{player['losses']}</b>\n"
-        f"Kills: <b>{player['kills']}</b>\n"
-        f"Deaths: <b>{player['deaths']}</b>\n"
         f"Win Rate: <b>{winrate:.0f}%</b>\n\n"
+
+        f"Protection: <b>{protection_text}</b>\n"
+        f"Next Kill: <b>{kill_text}</b>\n\n"
 
         f"{xp_bar(player['xp'])}"
     )
@@ -89,20 +146,19 @@ async def stats(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ):
-
     user, chat, player = get_player_data(
         update
     )
 
     total_games = (
-        player["wins"]
-        + player["losses"]
+        player["wins"] +
+        player["losses"]
     )
 
     winrate = (
-        player["wins"]
-        / total_games
-        * 100
+        player["wins"] /
+        total_games *
+        100
         if total_games
         else 0
     )
@@ -117,8 +173,6 @@ async def stats(
 
         f"Wins: <b>{player['wins']}</b>\n"
         f"Losses: <b>{player['losses']}</b>\n"
-        f"Kills: <b>{player['kills']}</b>\n"
-        f"Deaths: <b>{player['deaths']}</b>\n"
         f"Total Games: <b>{total_games}</b>\n"
         f"Win Rate: <b>{winrate:.0f}%</b>"
     )
@@ -128,7 +182,6 @@ async def coins(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ):
-
     user, chat, player = get_player_data(
         update
     )
@@ -144,7 +197,6 @@ async def level(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
 ):
-
     user, chat, player = get_player_data(
         update
     )
@@ -155,7 +207,8 @@ async def level(
 
     remaining = max(
         0,
-        next_level_xp - player["xp"],
+        next_level_xp -
+        player["xp"],
     )
 
     await update.message.reply_html(
