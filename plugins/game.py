@@ -1,7 +1,7 @@
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone, timedelta
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import ContextTypes
 
 from database import (
@@ -9,10 +9,9 @@ from database import (
     get_player,
     add_progress,
     set_daily,
+    set_kill_time,
     set_protection,
-    set_kill_cooldown,
-    update_coins,
-    update_points,
+    record_kill,
 )
 
 
@@ -32,7 +31,7 @@ def parse_time(value):
 
 async def daily(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+    context: ContextTypes.DEFAULT_TYPE,
 ):
     user = update.effective_user
     chat = update.effective_chat
@@ -78,18 +77,12 @@ async def daily(
     )
 
 
-async def kill(
+async def protect(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+    context: ContextTypes.DEFAULT_TYPE,
 ):
     user = update.effective_user
     chat = update.effective_chat
-
-    if chat.type == "private":
-        await update.message.reply_text(
-            "The /kill command can only be used in groups."
-        )
-        return
 
     ensure_player(
         user.id,
@@ -98,59 +91,145 @@ async def kill(
         user.full_name,
     )
 
-    attacker = get_player(
+    player = get_player(
         user.id,
         chat.id,
     )
 
-    cooldown = parse_time(
-        attacker["kill_cooldown_until"]
-    )
-
-    if cooldown and cooldown > now_utc():
-        remaining = cooldown - now_utc()
-        hours = int(remaining.total_seconds() // 3600)
-        minutes = int(
-            (remaining.total_seconds() % 3600) // 60
-        )
-
-        await update.message.reply_text(
-            "You cannot kill another player yet.\n"
-            f"Cooldown remaining: {hours}h {minutes}m."
+    if not context.args:
+        await update.message.reply_html(
+            "<b>Protection</b>\n\n"
+            "Choose a protection duration:\n\n"
+            "/protect 1h — 149 Coins\n"
+            "/protect 12h — 500 Coins\n"
+            "/protect 24h — 900 Coins"
         )
         return
 
-    target_user = None
+    duration = context.args[0].lower()
 
-    if update.message.reply_to_message:
-        target_user = (
-            update.message.reply_to_message.from_user
+    prices = {
+        "1h": (1, 149),
+        "12h": (12, 500),
+        "24h": (24, 900),
+    }
+
+    if duration not in prices:
+        await update.message.reply_html(
+            "<b>Invalid protection duration.</b>\n\n"
+            "/protect 1h — 149 Coins\n"
+            "/protect 12h — 500 Coins\n"
+            "/protect 24h — 900 Coins"
         )
+        return
 
-    elif context.args:
-        username = context.args[0].lstrip("@").lower()
+    hours, price = prices[duration]
 
-        players = []
+    if player["coins"] < price:
+        await update.message.reply_html(
+            "<b>Not enough coins.</b>\n\n"
+            f"Required: <b>{price}</b> coins\n"
+            f"Your coins: <b>{player['coins']}</b>"
+        )
+        return
 
-        from database import get_group_players
+    current_protection = parse_time(
+        player["protected_until"]
+    )
 
-        players = get_group_players(chat.id)
+    current_time = now_utc()
 
-        for player in players:
-            if (
-                player["username"]
-                and player["username"].lower() == username
-            ):
-                member = await chat.get_member(
-                    player["user_id"]
-                )
-                target_user = member.user
-                break
+    if current_protection and current_protection > current_time:
+        await update.message.reply_html(
+            "<b>You are already protected.</b>\n\n"
+            f"Protection ends at:\n"
+            f"<code>{current_protection.isoformat()}</code>"
+        )
+        return
+
+    protected_until = current_time + timedelta(
+        hours=hours
+    )
+
+    add_progress(
+        user.id,
+        chat.id,
+        coins=-price,
+    )
+
+    set_protection(
+        user.id,
+        chat.id,
+        protected_until.isoformat(),
+    )
+
+    await update.message.reply_html(
+        "<b>Protection Activated</b>\n\n"
+        f"Duration: <b>{duration}</b>\n"
+        f"Cost: <b>{price} Coins</b>\n\n"
+        "Other players cannot kill you "
+        "while your protection is active."
+    )
+
+
+async def kill(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    user = update.effective_user
+    chat = update.effective_chat
+
+    ensure_player(
+        user.id,
+        chat.id,
+        user.username,
+        user.full_name,
+    )
+
+    killer = get_player(
+        user.id,
+        chat.id,
+    )
+
+    # Kill cooldown
+    last_kill = parse_time(
+        killer["last_kill"]
+    )
+
+    current_time = now_utc()
+
+    if last_kill:
+        next_kill = last_kill + timedelta(hours=24)
+
+        if next_kill > current_time:
+            remaining = next_kill - current_time
+
+            hours = remaining.seconds // 3600
+            minutes = (remaining.seconds % 3600) // 60
+
+            await update.message.reply_html(
+                "<b>Kill Cooldown Active</b>\n\n"
+                f"You can kill again in "
+                f"<b>{hours}h {minutes}m</b>."
+            )
+            return
+
+    # Target must be a replied message
+    if not update.message.reply_to_message:
+        await update.message.reply_html(
+            "<b>How to use /kill</b>\n\n"
+            "Reply to the player's message with:\n"
+            "<code>/kill</code>"
+        )
+        return
+
+    target_user = (
+        update.message.reply_to_message.from_user
+    )
 
     if not target_user:
         await update.message.reply_text(
-            "Reply to a user's message and use /kill\n"
-            "or use /kill @username."
+            "This user cannot be targeted."
         )
         return
 
@@ -178,222 +257,76 @@ async def kill(
         chat.id,
     )
 
+    # Protection check
     protected_until = parse_time(
         target["protected_until"]
     )
 
-    if protected_until and protected_until > now_utc():
-        remaining = protected_until - now_utc()
-
-        hours = int(
-            remaining.total_seconds() // 3600
-        )
-        minutes = int(
-            (remaining.total_seconds() % 3600) // 60
-        )
-
+    if protected_until and protected_until > current_time:
         await update.message.reply_html(
-            f"<b>{target['name']}</b> is protected.\n"
-            f"Protection remaining: {hours}h {minutes}m."
+            f"<b>{target['name']}</b> is currently protected."
         )
         return
 
-    transferred_points = max(
+    # Reward calculation
+    target_points = max(
         0,
-        target["points"]
+        target["points"],
     )
 
-    if target["coins"] > 0:
-        stolen_coins = target["coins"]
+    target_coins = max(
+        0,
+        target["coins"],
+    )
+
+    if target_coins > 0:
+        reward_coins = target_coins
     else:
-        stolen_coins = random.randint(
+        reward_coins = random.randint(
             100,
-            200
+            200,
         )
 
-    update_points(
+    record_kill(
+        user.id,
+        chat.id,
         target_user.id,
         chat.id,
-        -transferred_points,
+        reward_coins,
+        target_points,
     )
 
-    update_coins(
-        target_user.id,
+    set_kill_time(
+        user.id,
         chat.id,
-        -target["coins"],
+        current_time.isoformat(),
+    )
+
+    bonus_xp = random.randint(
+        30,
+        60,
     )
 
     add_progress(
         user.id,
         chat.id,
-        xp=random.randint(25, 50),
-        coins=stolen_coins,
-        points=transferred_points,
-        win=True,
-        kill=True,
-    )
-
-    add_progress(
-        target_user.id,
-        chat.id,
-        loss=True,
-        death=True,
-    )
-
-    cooldown_until = (
-        now_utc()
-        + timedelta(hours=24)
-    ).isoformat()
-
-    set_kill_cooldown(
-        user.id,
-        chat.id,
-        cooldown_until,
+        xp=bonus_xp,
     )
 
     await update.message.reply_html(
-        "<b>Player Eliminated</b>\n\n"
-        f"Attacker: <b>{user.full_name}</b>\n"
+        "<b>Target Eliminated</b>\n\n"
         f"Target: <b>{target['name']}</b>\n\n"
-        f"Points gained: <b>+{transferred_points}</b>\n"
-        f"Coins gained: <b>+{stolen_coins}</b>\n\n"
-        "Your next kill will be available in 24 hours."
-    )
-
-
-async def protect(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-    user = update.effective_user
-    chat = update.effective_chat
-
-    ensure_player(
-        user.id,
-        chat.id,
-        user.username,
-        user.full_name,
-    )
-
-    player = get_player(
-        user.id,
-        chat.id,
-    )
-
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "1 Hour — 149 Coins",
-                callback_data="protect_1"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "12 Hours — 500 Coins",
-                callback_data="protect_12"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "24 Hours — 900 Coins",
-                callback_data="protect_24"
-            )
-        ],
-    ]
-
-    await update.message.reply_html(
-        "<b>Protection</b>\n\n"
-        "Choose your protection duration.\n\n"
-        "1 Hour — 149 Coins\n"
-        "12 Hours — 500 Coins\n"
-        "24 Hours — 900 Coins\n\n"
-        f"Your coins: <b>{player['coins']}</b>",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
-
-
-async def protection_callback(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
-    query = update.callback_query
-    await query.answer()
-
-    user = query.from_user
-    chat = query.message.chat
-
-    ensure_player(
-        user.id,
-        chat.id,
-        user.username,
-        user.full_name,
-    )
-
-    player = get_player(
-        user.id,
-        chat.id,
-    )
-
-    data = query.data
-
-    plans = {
-        "protect_1": (1, 149),
-        "protect_12": (12, 500),
-        "protect_24": (24, 900),
-    }
-
-    if data not in plans:
-        return
-
-    hours, price = plans[data]
-
-    if player["coins"] < price:
-        await query.edit_message_text(
-            f"You need {price} coins.\n"
-            f"You currently have {player['coins']} coins."
-        )
-        return
-
-    current_protection = parse_time(
-        player["protected_until"]
-    )
-
-    start_time = now_utc()
-
-    if (
-        current_protection
-        and current_protection > start_time
-    ):
-        start_time = current_protection
-
-    expires = (
-        start_time
-        + timedelta(hours=hours)
-    ).isoformat()
-
-    update_coins(
-        user.id,
-        chat.id,
-        -price,
-    )
-
-    set_protection(
-        user.id,
-        chat.id,
-        expires,
-    )
-
-    await query.edit_message_text(
-        f"Protection activated for {hours} hour(s).\n\n"
-        f"Coins spent: {price}\n"
-        f"Remaining coins: {player['coins'] - price}\n\n"
-        "Other players cannot kill you while protection is active."
+        f"+{reward_coins} Coins\n"
+        f"+{target_points} Points\n"
+        f"+{bonus_xp} XP\n\n"
+        "Your next kill will be available "
+        "after 24 hours."
     )
 
 
 async def train(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+    context: ContextTypes.DEFAULT_TYPE,
 ):
     user = update.effective_user
     chat = update.effective_chat
@@ -405,8 +338,15 @@ async def train(
         user.full_name,
     )
 
-    xp = random.randint(10, 25)
-    coins = random.randint(5, 15)
+    xp = random.randint(
+        10,
+        25,
+    )
+
+    coins = random.randint(
+        5,
+        15,
+    )
 
     add_progress(
         user.id,
@@ -426,7 +366,7 @@ async def train(
 
 async def explore(
     update: Update,
-    context: ContextTypes.DEFAULT_TYPE
+    context: ContextTypes.DEFAULT_TYPE,
 ):
     user = update.effective_user
     chat = update.effective_chat
@@ -446,10 +386,19 @@ async def explore(
         "Sky Island",
     ]
 
-    location = random.choice(locations)
+    location = random.choice(
+        locations
+    )
 
-    xp = random.randint(15, 35)
-    coins = random.randint(15, 50)
+    xp = random.randint(
+        15,
+        35,
+    )
+
+    coins = random.randint(
+        15,
+        50,
+    )
 
     add_progress(
         user.id,
