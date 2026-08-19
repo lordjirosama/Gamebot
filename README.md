@@ -1,234 +1,527 @@
-⚔️ Solurix
+<p align="center">
+    <a href="https://github.com/lordjirosama/Gamebot">
+        <kbd>
+            <img width="250" src="https://graph.org/file/placeholder-solurix-logo.jpg" alt="Solurix Logo">
+        </kbd>
+    </a>
+</p><h1 align="center">⚔️ Solurix</h1><p align="center">
+    <b>Telegram RPG Group Game Bot</b>
+</p><p align="center">
+    Earn XP • Collect Coins • Battle Players • Get Protection • Climb the Ranking
+</p><div align="center">---
 
-«A Telegram Group RPG Game Bot powered by SQLite»
+""Repository" (https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)" (https://github.com/lordjirosama/Gamebot)
+""Telegram Channel" (https://img.shields.io/badge/Telegram-Channel-229ED9?style=for-the-badge&logo=telegram)" (https://t.me/Solurix_bots)
+""Support Group" (https://img.shields.io/badge/Telegram-Support-229ED9?style=for-the-badge&logo=telegram)" (https://t.me/+1PeOFri-U2phYjd)
+""Owner" (https://img.shields.io/badge/Owner-@senpain__jiro-orange?style=for-the-badge&logo=telegram)" (https://t.me/senpain_jiro)
 
-Solurix is a clean and lightweight Telegram RPG game bot designed for groups and communities.
+</div>---
 
-Build your player profile, earn XP, collect coins and points, battle, claim daily rewards, and compete with other members on group rankings.
+📖 About
 
----
+Solurix is a Telegram group RPG game bot built with Python.
 
-🌟 Features
+Players can create their own progress inside Telegram groups, earn XP, collect coins, gain points, level up, fight other players, activate protection, and compete for the top position on the group leaderboard.
 
-- ⚔️ RPG Battles
-- ⭐ XP & Level System
-- 🪙 Coins & Points
-- 🎁 Daily Rewards
-- 🏆 Group-wise Rankings
-- 👤 Player Profiles
-- 📊 Player Statistics
-- 🛡️ Admin Group Reset
-- 💾 SQLite Database
-- 🧩 Modular Plugin Structure
-- 🚀 VPS-friendly Polling Deployment
-- 📱 Telegram Command Support
-
----
-
-🎮 Commands
-
-Type "/" in the bot's private chat or inside a Telegram group to see the available commands.
-
-🚀 Basic
-
-"/start"
-
-Start the Solurix bot.
-
-/start
-
-Use this when you first open the bot or want to display the start message.
+Each group has its own separate player data, making every group its own Solurix RPG world.
 
 ---
 
-"/help"
+✨ Features
 
-Show the available Solurix commands and basic usage information.
+<details>
+<summary><b>⚔️ RPG Game System</b></summary>- XP progression
+- Automatic level system
+- Coins economy
+- Points system
+- Wins and losses
+- Win-rate tracking
+- Player profiles
+- Group-based progression
 
-/help
+</details><details>
+<summary><b>🎮 Game Activities</b></summary>- Daily rewards
+- Player battles
+- Player kills
+- Training
+- Exploration
+- Random rewards
+- XP progression
+- Coin rewards
+- Point rewards
 
----
+</details><details>
+<summary><b>☠️ Kill System</b></summary>- Reply-based player targeting
+- 24-hour kill cooldown
+- Kill rewards
+- Point transfer
+- Coin rewards
+- Protected-player detection
+- Kill status tracking
 
-👤 Profile
+</details><details>
+<summary><b>🛡️ Protection System</b></summary>Players can protect themselves from the kill system.
 
-"/profile"
+Available protection plans:
 
-View your Solurix player profile.
+- 1 Hour — 149 Coins
+- 12 Hours — 500 Coins
+- 24 Hours — 900 Coins
 
-/profile
+Protection automatically expires after the selected duration.
 
-Your profile contains your game-related information.
+</details><details>
+<summary><b>🏆 Ranking System</b></summary>- Group-specific leaderboard
+- Top 10 players
+- Medal system
+- Points-based ranking
+- Level and XP comparison
+- Separate rankings for every group
 
----
+</details><details>
+<summary><b>👤 Player System</b></summary>Every player has their own profile containing:
 
-"/me"
+- Name
+- Username
+- Level
+- XP
+- Coins
+- Points
+- Wins
+- Losses
+- Win rate
+- XP progress
 
-A shortcut for "/profile".
+</details><details>
+<summary><b>👑 Admin System</b></summary>Group administrators can manage Solurix game data.
 
-/me
+- Admin-only reset
+- Broadcast system
+- Group management
+- Admin permission checking
 
----
+</details><details>
+<summary><b>💾 Database</b></summary>Solurix uses SQLite for persistent storage.
 
-⚔️ Game
+Player data is stored separately for each Telegram group.
 
-"/daily"
+Stored information includes:
 
-Claim your daily reward.
+- User ID
+- Chat ID
+- Username
+- Name
+- XP
+- Level
+- Coins
+- Points
+- Wins
+- Losses
+- Daily reward status
+- Kill cooldown
+- Protection status
+
+</details>---
+
+🤖 Bot Commands
+
+<details>
+<summary><b>👤 Player Commands</b></summary>Command| Usage
+"/start"| Start Solurix and open the main menu.
+"/help"| Show the complete command guide.
+"/profile"| View your player profile.
+"/me"| Quickly view your profile.
+"/stats"| View your game statistics.
+"/coins"| Check your current coins.
+"/level"| Check your current level and XP progress.
+
+</details><details>
+<summary><b>🎮 Game Commands</b></summary>Command| Usage
+"/daily"| Claim your daily reward.
+"/battle"| Fight a random enemy and earn rewards.
+"/kill"| Kill another player by replying to their message.
+"/protect"| Activate protection from the kill system.
+"/train"| Train and earn XP, coins, and points.
+"/explore"| Explore a random location and receive rewards.
+
+</details><details>
+<summary><b>🏆 Ranking Commands</b></summary>Command| Usage
+"/rank"| View the current group's ranking.
+"/ranking"| View the group leaderboard.
+
+</details><details>
+<summary><b>👑 Admin Commands</b></summary>Command| Usage
+"/reset"| Reset Solurix data for the current group.
+"/broadcast"| Send a broadcast message through the bot.
+
+Admin commands are restricted to authorized administrators.
+
+</details>---
+
+🎁 Daily Reward
+
+Use:
 
 /daily
 
-Daily rewards help players progress through the game.
+The current daily reward provides:
+
+✨ +50 XP
+🪙 +100 Coins
+⭐ +25 Points
+
+The reward can be claimed once per day.
 
 ---
 
-"/battle"
+⚔️ Battle System
 
-Start an RPG battle.
+Use:
 
 /battle
 
-Battle results can affect your game progress depending on the current game mechanics.
+The bot generates a random enemy.
+
+Possible encounters include:
+
+- Shadow Beast
+- Iron Golem
+- Void Guardian
+- Crimson Wolf
+- Storm Drake
+
+A successful battle provides random XP, coins, and points.
+
+A lost battle still provides consolation XP.
 
 ---
 
-🏆 Rankings
+☠️ Kill System
 
-"/rank"
+Use "/kill" by replying to another player's message.
 
-View the ranking for the current group.
+The bot checks:
+
+1. Target player
+2. Kill cooldown
+3. Protection status
+4. Available rewards
+
+A successful kill rewards the attacker according to the current game rules.
+
+Kill Cooldown
+
+Players have a 24-hour kill cooldown.
+
+The cooldown prevents repeated kills within the same period.
+
+---
+
+🛡️ Protection System
+
+Use:
+
+/protect
+
+Protection prevents other players from killing you while it is active.
+
+Protection Plans
+
+Duration| Cost
+1 Hour| 149 Coins
+12 Hours| 500 Coins
+24 Hours| 900 Coins
+
+Protection expires automatically.
+
+---
+
+🏋️ Training
+
+Use:
+
+/train
+
+Training gives random:
+
+- XP
+- Coins
+- Points
+
+Training is an easy way to progress your character.
+
+---
+
+🗺️ Exploration
+
+Use:
+
+/explore
+
+Possible locations include:
+
+- Mystic Forest
+- Crystal Valley
+- Ancient Ruins
+- Moonlit Village
+- Sky Island
+
+Exploration provides random XP, coins, and points.
+
+---
+
+🪙 Economy
+
+Solurix has three main progression currencies/values.
+
+🪙 Coins
+
+Coins are used for game features such as protection and are earned through gameplay.
+
+✨ XP
+
+XP determines your level.
+
+⭐ Points
+
+Points are used for competitive group rankings.
+
+---
+
+📈 Level System
+
+Players start from Level 1.
+
+Level progression is based on accumulated XP.
+
+The profile displays an XP progress bar so players can track their progress.
+
+---
+
+🏆 Group Ranking
+
+Use:
 
 /rank
 
-Use this to see how you compare with other players in the group.
-
----
-
-"/ranking"
-
-Alternative command for the group ranking.
+or:
 
 /ranking
 
+The leaderboard shows the top players of the current group.
+
+Ranking prioritizes:
+
+1. Points
+2. Level
+3. XP
+
+Every group has an independent leaderboard.
+
 ---
 
-🛡️ Admin
+👤 Player Profile
+
+Use:
+
+/profile
+
+The profile shows:
+
+👤 Player Name
+⚔️ Level
+⭐ Points
+✨ XP
+🪙 Coins
+🏆 Wins
+💫 Losses
+📈 Win Rate
+
+---
+
+👑 Admin System
+
+Solurix supports administrator-only game management.
 
 "/reset"
 
-Reset the game data for the current group.
+Resets all Solurix player data for the current group.
 
-/reset
+Only group administrators can use this command.
 
-⚠️ Admin only
+"/broadcast"
 
-This command is restricted to group administrators.
+The broadcast system allows authorized administrators to send a message through the bot.
 
-Use it carefully because resetting game data can affect the current group's game progress.
-
----
-
-📋 Complete Command List
-
-Command| Purpose
-"/start"| Start Solurix
-"/help"| Show available commands
-"/profile"| View your profile
-"/me"| View your profile
-"/daily"| Claim daily reward
-"/battle"| Start a battle
-"/rank"| View group ranking
-"/ranking"| View group ranking
-"/reset"| Reset group game data — Admin only
+Broadcast permissions should only be given to trusted administrators.
 
 ---
 
-🎯 How To Play
+📢 Community
 
-1. Add Solurix to your Telegram group
+<div align="center">📢 Solurix Bots
 
-Add the bot to your group and start the game.
+""Telegram Channel" (https://img.shields.io/badge/Join%20Channel-Solurix%20Bots-229ED9?style=for-the-badge&logo=telegram)" (https://t.me/Solurix_bots)
 
-2. Start
+💬 Support Group
 
-Use:
+""Support" (https://img.shields.io/badge/Join%20Support%20Group-229ED9?style=for-the-badge&logo=telegram)" (https://t.me/+1PeOFri-U2phYjd)
 
-/start
+👑 Owner
 
-3. Check your profile
+""Owner" (https://img.shields.io/badge/@senpain__jiro-Contact-orange?style=for-the-badge&logo=telegram)" (https://t.me/senpain_jiro)
 
-Use:
+</div>---
 
-/profile
+🚀 Deployment
 
-or:
+Requirements
 
-/me
-
-4. Claim your daily reward
-
-Use:
-
-/daily
-
-5. Battle
-
-Use:
-
-/battle
-
-6. Check the leaderboard
-
-Use:
-
-/rank
-
-or:
-
-/ranking
-
-7. Get help
-
-Use:
-
-/help
+- Python 3.10+
+- Telegram Bot Token
+- Linux VPS recommended
+- SQLite
+- Internet connection
 
 ---
 
-📱 Telegram Command Menu
+📥 Clone Repository
 
-Solurix can be used directly from Telegram's command interface.
-
-Simply type:
-
-/
-
-in the bot's PM or in a group where the bot is available.
-
-Telegram can then display the bot's available commands.
+git clone https://github.com/lordjirosama/Gamebot.git
+cd Gamebot
 
 ---
 
-💾 Database
+🐍 Create Virtual Environment
 
-Solurix uses SQLite for storing game data.
+python3 -m venv .venv
 
-The configured database path is:
+Activate it:
+
+source .venv/bin/activate
+
+---
+
+📦 Install Requirements
+
+pip install -r requirements.txt
+
+---
+
+⚙️ Configuration
+
+Create:
+
+.env
+
+Add:
+
+BOT_TOKEN=YOUR_BOT_TOKEN
+
+Optional database path:
+
+DB_PATH=data/solurix.db
+
+Never publish your ".env" file.
+
+---
+
+▶️ Start Bot
+
+python3 bot.py
+
+If the terminal shows:
+
+Application started
+
+the bot is running successfully.
+
+---
+
+♾️ 24/7 VPS Hosting
+
+For simple VPS hosting, Solurix can be run inside "screen".
+
+Create a screen session:
+
+screen -S solurix
+
+Activate the environment:
+
+source .venv/bin/activate
+
+Start the bot:
+
+python3 bot.py
+
+When you see:
+
+Application started
+
+detach from screen:
+
+Ctrl + A
+D
+
+The bot will continue running after you leave the SSH session.
+
+Check Screen
+
+screen -ls
+
+Reopen Solurix
+
+screen -r solurix
+
+---
+
+🔄 Updating the Bot
+
+Go to the project:
+
+cd ~/Solurix
+
+Pull the latest changes:
+
+git pull --ff-only
+
+Compile the project:
+
+python3 -m py_compile database.py bot.py plugins/*.py
+
+Then restart the bot.
+
+---
+
+🗄️ Database
+
+Default database:
 
 data/solurix.db
 
-The database allows the bot to keep player and group game information persistent between restarts.
+SQLite is used because Solurix is designed to be lightweight and easy to deploy.
+
+Database Backup
+
+Before making database changes:
+
+cp data/solurix.db data/solurix.db.backup
 
 ---
 
-🧩 Project Structure
+📁 Project Structure
 
-Gamebot/
+Solurix/
 │
 ├── bot.py
 ├── config.py
 ├── database.py
 ├── requirements.txt
 ├── README.md
+├── .env
+│
+├── data/
+│   └── solurix.db
 │
 └── plugins/
     ├── admin.py
@@ -237,207 +530,171 @@ Gamebot/
     ├── profile.py
     └── ranking.py
 
-The project uses a modular plugin structure so individual game features can be maintained separately.
+---
+
+🧩 Plugin Structure
+
+"bot.py"
+
+Main application file.
+
+It loads the Telegram application and registers commands.
+
+"config.py"
+
+Stores bot configuration such as:
+
+- Bot token
+- Bot name
+- Brand channel
+- Database path
+- Image configuration
+
+"database.py"
+
+Handles SQLite database operations.
+
+"plugins/game.py"
+
+Contains gameplay systems such as:
+
+- Daily rewards
+- Battles
+- Training
+- Exploration
+- Kill system
+- Protection system
+
+"plugins/profile.py"
+
+Handles:
+
+- Profiles
+- Statistics
+- Coins
+- Levels
+
+"plugins/ranking.py"
+
+Handles group rankings and leaderboards.
+
+"plugins/admin.py"
+
+Handles administrator-only commands.
+
+"plugins/help.py"
+
+Contains start and help messages.
 
 ---
 
-⚙️ Requirements
+🖼️ Image Support
 
-- Python 3.10+
-- Telegram Bot Token
-- SQLite
-- VPS or another Python-compatible hosting environment
+Solurix supports optional images for different bot sections.
 
----
+Available configuration fields:
 
-🚀 VPS Installation
+START_IMAGE
+PROFILE_IMAGE
+DAILY_IMAGE
+BATTLE_IMAGE
+TRAIN_IMAGE
+EXPLORE_IMAGE
+RANKING_IMAGE
+HELP_IMAGE
 
-Clone the repository:
-
-git clone https://github.com/lordjirosama/Gamebot.git Solurix
-
-Enter the project:
-
-cd Solurix
-
-Create a virtual environment:
-
-python3 -m venv .venv
-
-Activate it:
-
-source .venv/bin/activate
-
-Install dependencies:
-
-pip install -r requirements.txt
-
-Create the environment file:
-
-cp .env.example .env
-
-Edit the environment file:
-
-nano .env
-
-Add your bot token:
-
-BOT_TOKEN=YOUR_BOT_TOKEN
-
-Save the file and start the bot:
-
-python3 bot.py
+Images can be configured later using Telegram file IDs or supported image URLs.
 
 ---
 
-🔐 Configuration
+🔐 Security
 
-Solurix reads its bot token from the ".env" file.
+Never expose your bot token publicly.
 
-Example:
+Keep:
 
-BOT_TOKEN=YOUR_BOT_TOKEN
+.env
 
-The database path can also be configured:
+private.
 
-DB_PATH=data/solurix.db
+If your bot token is accidentally exposed, immediately regenerate it using Telegram's BotFather and update your ".env".
 
-Do not publish your real bot token on GitHub.
+Do not commit:
 
-If a real token has ever been exposed publicly, regenerate it through BotFather and update your ".env".
+.env
+data/solurix.db
+.venv/
+__pycache__/
 
----
-
-🖼️ Custom Branding & Images
-
-Solurix is designed so additional visual branding can be added later.
-
-Recommended image sections include:
-
-START_IMAGE=
-HELP_IMAGE=
-PROFILE_IMAGE=
-DAILY_IMAGE=
-BATTLE_IMAGE=
-RANKING_IMAGE=
-
-You can add your preferred Telegram image "file_id" values later when image support is added to the corresponding handlers.
+to a public repository.
 
 ---
 
-🛠️ Running Solurix on VPS
-
-For a temporary VPS session:
-
-python3 bot.py
-
-For a persistent "screen" session:
-
-screen -S solurix
-python3 bot.py
-
-Detach from the session:
-
-CTRL + A
-D
-
-Return to the running bot:
-
-screen -r solurix
-
----
-
-🔄 Updating Solurix
-
-Before updating, make sure your database is backed up.
-
-Then pull the latest code:
-
-git pull
-
-Activate the virtual environment if required:
-
-source .venv/bin/activate
-
-Update dependencies:
-
-pip install -r requirements.txt
-
-Restart the bot:
-
-python3 bot.py
-
----
-
-🐛 Troubleshooting
+🛠️ Troubleshooting
 
 Bot does not start
 
-Check that your ".env" contains:
+Check:
 
-BOT_TOKEN=YOUR_BOT_TOKEN
+python3 -m py_compile database.py bot.py plugins/*.py
 
-Then run:
-
-python3 bot.py
-
-and check the terminal output.
-
-Commands are not responding
-
-Make sure the bot is running:
+Then:
 
 python3 bot.py
-
-Then check the terminal for Python or Telegram API errors.
-
-"/reset" does not work
-
-"/reset" is an administrator-only command and is intended for use inside groups.
-
-Database issues
-
-Make sure the bot has permission to create and write to:
-
-data/solurix.db
 
 ---
 
-📢 Official Branding
+Check Python version
 
-Solurix Bots
+python3 --version
 
-Owner: Jiro
+---
 
-Creator / Contact: "@senpain_jiro" (https://t.me/senpain_jiro)
+Check installed dependencies
 
-Official Channel: "Solurix Bots" (https://t.me/Solurix_bots)
+pip list
+
+---
+
+Check Git status
+
+git status
+
+---
+
+Check running screen sessions
+
+screen -ls
 
 ---
 
 🔗 Links
 
-GitHub Repository:
-https://github.com/lordjirosama/Gamebot
-
-Official Telegram Channel:
-https://t.me/Solurix_bots
-
-Owner:
-https://t.me/senpain_jiro
+Resource| Link
+GitHub Repository| "Gamebot" (https://github.com/lordjirosama/Gamebot)
+Telegram Channel| "Solurix Bots" (https://t.me/Solurix_bots)
+Support Group| "Solurix Support" (https://t.me/+1PeOFri-U2phYjd)
+Owner| "@senpain_jiro" (https://t.me/senpain_jiro)
 
 ---
 
 ❤️ Credits
 
-Developed and maintained by Jiro.
+<p align="center"><b>Solurix</b><br>
+Telegram RPG Group Game Bot
 
-Built for Telegram communities, group gaming, and RPG-style entertainment.
+<br>Developed and maintained by<br>
 
----
+<a href="https://t.me/senpain_jiro">
+<b>@senpain_jiro</b>
+</a><br><br>
 
-⚔️ Solurix
+<a href="https://t.me/Solurix_bots">
+<b>Solurix Bots</b>
+</a></p>---
 
-«Play. Battle. Earn. Level Up.»
+📜 License
 
-Solurix Bots — Built for Telegram Communities.
+This project is maintained for the Solurix Telegram community.
+
+© Solurix Bots
