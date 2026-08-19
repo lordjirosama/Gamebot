@@ -6,31 +6,13 @@ from telegram import (
     BotCommandScopeAllGroupChats,
     BotCommandScopeAllPrivateChats,
 )
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    CallbackQueryHandler,
-)
+from telegram.ext import Application, CommandHandler
 
 from config import TOKEN
 from database import init_db
 
-from plugins.profile import (
-    profile,
-    stats,
-    coins,
-    level,
-)
-
-from plugins.game import (
-    daily,
-    kill,
-    protect,
-    protection_callback,
-    train,
-    explore,
-)
-
+from plugins.profile import profile, stats, coins, level
+from plugins.game import daily, kill, protect, train, explore
 from plugins.ranking import rank
 from plugins.admin import reset
 from plugins.help import help_cmd, start
@@ -68,7 +50,6 @@ ADMIN_COMMANDS = PLAYER_COMMANDS + [
 
 
 async def setup_commands(app: Application):
-
     await app.bot.set_my_commands(
         PLAYER_COMMANDS,
         scope=BotCommandScopeAllPrivateChats(),
@@ -85,7 +66,6 @@ async def setup_commands(app: Application):
 
 
 def main():
-
     if not TOKEN:
         raise RuntimeError(
             "BOT_TOKEN is missing. Put it in your .env file."
@@ -149,14 +129,6 @@ def main():
 
     app.add_handler(
         CommandHandler("explore", explore)
-    )
-
-    # Protection buttons
-    app.add_handler(
-        CallbackQueryHandler(
-            protection_callback,
-            pattern=r"^protect_(1|12|24)$",
-        )
     )
 
     # Ranking
