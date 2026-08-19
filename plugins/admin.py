@@ -1,100 +1,137 @@
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler
 
-from database import (
-    reset_chat,
-    get_all_users,
-)
+from config import OWNER_ID
+from database import reset_user, get_user
 
 
-async def is_admin(update: Update):
-    user = update.effective_user
-    chat = update.effective_chat
+# ============================================================
+# ADMIN CHECK
+# ============================================================
 
-    if not user or not chat:
-        return False
+def is_owner(user_id: int) -> bool:
+    """Check whether the user is the bot owner."""
 
-    if chat.type not in ("group", "supergroup"):
-        return False
-
-    member = await chat.get_member(user.id)
-
-    return member.status in (
-        "administrator",
-        "creator",
-    )
+    return user_id == OWNER_ID
 
 
-async def reset(
+# ============================================================
+# /RESET
+# ============================================================
+
+async def reset_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
-):
-    if not await is_admin(update):
-        await update.message.reply_text(
-            "Only group administrators can use /reset."
-        )
+) -> None:
+
+    user = update.effective_user
+
+    if not user or not update.message:
         return
 
-    reset_chat(
-        update.effective_chat.id
+    # --------------------------------------------------------
+    # OWNER ONLY
+    # --------------------------------------------------------
+
+    if not is_owner(user.id):
+
+        await update.message.reply_text(
+            "❌ You are not authorized to use this command."
+        )
+
+        return
+
+    # --------------------------------------------------------
+    # TARGET USER
+    # --------------------------------------------------------
+
+    target_id = None
+
+    # Reply to a user's message
+    if update.message.reply_to_message:
+
+        target_id = (
+            update.message
+            .reply_to_message
+            .from_user
+            .id
+        )
+
+    # /reset USER_ID
+    elif context.args:
+
+        try:
+            target_id = int(
+                context.args[0]
+            )
+
+        except ValueError:
+
+            await update.message.reply_text(
+                "❌ Invalid user ID.\n\n"
+                "Use /reset USER_ID or reply to a user's message."
+            )
+
+            return
+
+    if not target_id:
+
+        await update.message.reply_text(
+            "🛠 <b>Reset User</b>\n\n"
+            "Reply to a user's message with:\n"
+            "<code>/reset</code>\n\n"
+            "Or use:\n"
+            "<code>/reset USER_ID</code>",
+            parse_mode="HTML",
+        )
+
+        return
+
+    # --------------------------------------------------------
+    # CHECK USER
+    # --------------------------------------------------------
+
+    target = get_user(
+        target_id
+    )
+
+    if not target:
+
+        await update.message.reply_text(
+            "❌ User not found in the database."
+        )
+
+        return
+
+    # --------------------------------------------------------
+    # RESET
+    # --------------------------------------------------------
+
+    reset_user(
+        target_id
     )
 
     await update.message.reply_text(
-        "Solurix data for this group "
-        "has been reset successfully."
+        "✅ <b>User Reset Successfully</b>\n\n"
+        f"👤 User ID: <code>{target_id}</code>\n"
+        "⭐ Level: 1\n"
+        "✨ XP: 0\n"
+        "💰 Coins: 100\n"
+        "⚔️ Stats: Reset",
+        parse_mode="HTML",
     )
 
 
-async def broadcast(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    if not await is_admin(update):
-        await update.message.reply_text(
-            "Only group administrators can use /broadcast."
+# ============================================================
+# PLUGIN SETUP
+# ============================================================
+
+def setup(application) -> None:
+    """Register admin commands."""
+
+    application.add_handler(
+        CommandHandler(
+            "reset",
+            reset_command,
         )
-        return
-
-    if not context.args:
-        await update.message.reply_text(
-            "Usage:\n"
-            "/broadcast Your message here"
-        )
-        return
-
-    message = " ".join(context.args)
-
-    users = get_all_users()
-
-    if not users:
-        await update.message.reply_text(
-            "There are no registered users yet."
-        )
-        return
-
-    status_message = await update.message.reply_text(
-        "Broadcast started..."
-    )
-
-    sent = 0
-    failed = 0
-
-    for row in users:
-        user_id = row["user_id"]
-
-        try:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=message,
-            )
-
-            sent += 1
-
-        except Exception:
-            failed += 1
-
-    await status_message.edit_text(
-        "Broadcast completed.\n\n"
-        f"Sent: {sent}\n"
-        f"Failed: {failed}"
     )
