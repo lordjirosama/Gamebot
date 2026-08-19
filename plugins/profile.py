@@ -1,227 +1,154 @@
-from datetime import datetime, timezone
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import ContextTypes, CommandHandler
 
-from telegram import Update
-from telegram.ext import ContextTypes
-
-from database import (
-    ensure_player,
-    get_player,
-)
+from database import ensure_user, get_user
 
 
-def xp_bar(xp, size=10):
-    current = xp % 100
-    filled = int(
-        current / 100 * size
+# ============================================================
+# PROFILE TEXT
+# ============================================================
+
+def build_profile(user_data: dict) -> str:
+    """Create the player profile message."""
+
+    username = user_data.get("username") or "Not set"
+    first_name = user_data.get("first_name") or "Player"
+
+    return f"""
+<b>👤 Solurix Profile</b>
+
+<b>Name:</b> {first_name}
+<b>Username:</b> @{username if username != "Not set" else username}
+
+━━━━━━━━━━━━━━━━━━
+
+<b>⭐ Level:</b> {user_data.get("level", 1)}
+<b>✨ XP:</b> {user_data.get("xp", 0)}
+<b>💰 Coins:</b> {user_data.get("coins", 0)}
+
+━━━━━━━━━━━━━━━━━━
+
+<b>⚔️ Battles:</b> {user_data.get("battles", 0)}
+<b>🏆 Wins:</b> {user_data.get("wins", 0)}
+<b>💔 Losses:</b> {user_data.get("losses", 0)}
+<b>🎯 Hunts:</b> {user_data.get("hunts", 0)}
+<b>💬 Messages:</b> {user_data.get("messages", 0)}
+"""
+
+
+# ============================================================
+# PROFILE BUTTONS
+# ============================================================
+
+def profile_keyboard() -> InlineKeyboardMarkup:
+
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "🔄 Refresh",
+                callback_data="profile_refresh",
+            ),
+        ],
+    ]
+
+    return InlineKeyboardMarkup(keyboard)
+
+
+# ============================================================
+# /PROFILE
+# ============================================================
+
+async def profile_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+
+    user = update.effective_user
+
+    if not user or not update.message:
+        return
+
+    # Register/update user
+    ensure_user(
+        user_id=user.id,
+        username=user.username or "",
+        first_name=user.first_name or "",
     )
 
-    return (
-        "▰" * filled
-        + "▱" * (size - filled)
+    user_data = get_user(user.id)
+
+    if not user_data:
+        await update.message.reply_text(
+            "Unable to load your profile right now."
+        )
+        return
+
+    await update.message.reply_text(
+        build_profile(user_data),
+        reply_markup=profile_keyboard(),
+        parse_mode="HTML",
     )
 
 
-def get_remaining_time(stamp):
-    if not stamp:
-        return None
+# ============================================================
+# REFRESH PROFILE
+# ============================================================
+
+async def profile_refresh(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+
+    query = update.callback_query
+
+    if not query:
+        return
+
+    await query.answer("Profile updated.")
+
+    user = query.from_user
+
+    ensure_user(
+        user_id=user.id,
+        username=user.username or "",
+        first_name=user.first_name or "",
+    )
+
+    user_data = get_user(user.id)
+
+    if not user_data:
+        return
 
     try:
-        target = datetime.fromisoformat(stamp)
-
-        if target.tzinfo is None:
-            target = target.replace(
-                tzinfo=timezone.utc
-            )
-
-        remaining = (
-            target -
-            datetime.now(timezone.utc)
+        await query.edit_message_text(
+            build_profile(user_data),
+            reply_markup=profile_keyboard(),
+            parse_mode="HTML",
         )
 
-        if remaining.total_seconds() <= 0:
-            return None
+    except Exception:
+        pass
 
-        total_minutes = int(
-            remaining.total_seconds() // 60
+
+# ============================================================
+# PLUGIN SETUP
+# ============================================================
+
+def setup(application) -> None:
+    """Register profile handlers."""
+
+    application.add_handler(
+        CommandHandler(
+            "profile",
+            profile_command,
         )
-
-        hours = total_minutes // 60
-        minutes = total_minutes % 60
-
-        return hours, minutes
-
-    except ValueError:
-        return None
-
-
-def get_player_data(update):
-    user = update.effective_user
-    chat = update.effective_chat
-
-    ensure_player(
-        user.id,
-        chat.id,
-        user.username,
-        user.full_name,
     )
 
-    return (
-        user,
-        chat,
-        get_player(
-            user.id,
-            chat.id,
-        ),
-    )
+    from telegram.ext import CallbackQueryHandler
 
-
-async def profile(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    user, chat, player = get_player_data(
-        update
-    )
-
-    total_games = (
-        player["wins"] +
-        player["losses"]
-    )
-
-    winrate = (
-        player["wins"] /
-        total_games *
-        100
-        if total_games
-        else 0
-    )
-
-    protection = get_remaining_time(
-        player["protected_until"]
-    )
-
-    kill_cooldown = get_remaining_time(
-        player["last_kill"]
-    )
-
-    protection_text = (
-        f"{protection[0]}h {protection[1]}m"
-        if protection
-        else "Not active"
-    )
-
-    if kill_cooldown:
-        kill_text = (
-            f"{kill_cooldown[0]}h "
-            f"{kill_cooldown[1]}m"
+    application.add_handler(
+        CallbackQueryHandler(
+            profile_refresh,
+            pattern=r"^profile_refresh$",
         )
-    else:
-        kill_text = "Available"
-
-    text = (
-        "<b>PLAYER PROFILE</b>\n\n"
-
-        f"Name: <b>{player['name']}</b>\n"
-        f"Level: <b>{player['level']}</b>\n"
-        f"Points: <b>{player['points']}</b>\n"
-        f"XP: <b>{player['xp']}</b>\n"
-        f"Coins: <b>{player['coins']}</b>\n\n"
-
-        f"Wins: <b>{player['wins']}</b>\n"
-        f"Losses: <b>{player['losses']}</b>\n"
-        f"Win Rate: <b>{winrate:.0f}%</b>\n\n"
-
-        f"Protection: <b>{protection_text}</b>\n"
-        f"Next Kill: <b>{kill_text}</b>\n\n"
-
-        f"{xp_bar(player['xp'])}"
-    )
-
-    await update.message.reply_html(
-        text
-    )
-
-
-async def stats(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    user, chat, player = get_player_data(
-        update
-    )
-
-    total_games = (
-        player["wins"] +
-        player["losses"]
-    )
-
-    winrate = (
-        player["wins"] /
-        total_games *
-        100
-        if total_games
-        else 0
-    )
-
-    await update.message.reply_html(
-        "<b>YOUR STATISTICS</b>\n\n"
-
-        f"Level: <b>{player['level']}</b>\n"
-        f"XP: <b>{player['xp']}</b>\n"
-        f"Coins: <b>{player['coins']}</b>\n"
-        f"Points: <b>{player['points']}</b>\n\n"
-
-        f"Wins: <b>{player['wins']}</b>\n"
-        f"Losses: <b>{player['losses']}</b>\n"
-        f"Total Games: <b>{total_games}</b>\n"
-        f"Win Rate: <b>{winrate:.0f}%</b>"
-    )
-
-
-async def coins(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    user, chat, player = get_player_data(
-        update
-    )
-
-    await update.message.reply_html(
-        "<b>YOUR COINS</b>\n\n"
-        f"You currently have "
-        f"<b>{player['coins']}</b> coins."
-    )
-
-
-async def level(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    user, chat, player = get_player_data(
-        update
-    )
-
-    next_level_xp = (
-        player["level"] * 100
-    )
-
-    remaining = max(
-        0,
-        next_level_xp -
-        player["xp"],
-    )
-
-    await update.message.reply_html(
-        "<b>LEVEL INFORMATION</b>\n\n"
-
-        f"Current Level: "
-        f"<b>{player['level']}</b>\n"
-
-        f"Current XP: "
-        f"<b>{player['xp']}</b>\n"
-
-        f"XP to next level: "
-        f"<b>{remaining}</b>\n\n"
-
-        "Keep playing to level up!"
     )
