@@ -1,417 +1,586 @@
 import random
-from datetime import datetime, timezone, timedelta
+import time
 
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters
+
+from config import (
+    XP_PER_MESSAGE,
+    XP_COOLDOWN,
+    BATTLE_COOLDOWN,
+    BATTLE_MIN_REWARD,
+    BATTLE_MAX_REWARD,
+    HUNT_COOLDOWN,
+    HUNT_MIN_REWARD,
+    HUNT_MAX_REWARD,
+)
 
 from database import (
-    ensure_player,
-    get_player,
-    add_progress,
-    set_daily,
-    set_kill_time,
-    set_protection,
-    record_kill,
+    ensure_user,
+    get_user,
+    add_coins,
+    add_xp,
+    increment_stat,
+    add_history,
+    get_cooldown,
+    set_cooldown,
+    add_group_member,
 )
 
 
-def now_utc():
-    return datetime.now(timezone.utc)
+# ============================================================
+# LEVEL SYSTEM
+# ============================================================
+
+def xp_required(level: int) -> int:
+    """Return XP required for the next level."""
+
+    return level * 100
 
 
-def parse_time(value):
-    if not value:
-        return None
+def process_xp(user_id: int, amount: int) -> tuple[int, bool]:
+    """
+    Add XP and automatically handle level ups.
 
-    try:
-        return datetime.fromisoformat(value)
-    except (ValueError, TypeError):
-        return None
+    Returns:
+        (new_level, level_up)
+    """
+
+    user = get_user(user_id)
+
+    if not user:
+        return 1, False
+
+    old_level = user["level"]
+
+    add_xp(user_id, amount)
+
+    user = get_user(user_id)
+
+    if not user:
+        return old_level, False
+
+    current_level = user["level"]
+    current_xp = user["xp"]
+
+    new_level = current_level
+
+    while current_xp >= xp_required(new_level):
+        current_xp -= xp_required(new_level)
+        new_level += 1
+
+    if new_level != current_level:
+
+        # Keep total XP in database.
+        from database import set_level
+
+        set_level(
+            user_id,
+            new_level,
+        )
+
+        return new_level, True
+
+    return old_level, False
 
 
-async def daily(
+# ============================================================
+# COOLDOWN
+# ============================================================
+
+def cooldown_remaining(
+    user_id: int,
+    action: str,
+    cooldown: int,
+) -> int:
+    """Return remaining cooldown seconds."""
+
+    last_used = get_cooldown(
+        user_id,
+        action,
+    )
+
+    remaining = cooldown - (
+        time.time() - last_used
+    )
+
+    return max(
+        0,
+        int(remaining),
+    )
+
+
+def use_action(
+    user_id: int,
+    action: str,
+) -> None:
+    """Save action usage time."""
+
+    set_cooldown(
+        user_id,
+        action,
+        time.time(),
+    )
+
+
+# ============================================================
+# MESSAGE XP
+# ============================================================
+
+async def message_xp(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
-):
+) -> None:
+
+    if not update.effective_user:
+        return
+
     user = update.effective_user
-    chat = update.effective_chat
 
-    ensure_player(
-        user.id,
-        chat.id,
-        user.username,
-        user.full_name,
-    )
-
-    player = get_player(user.id, chat.id)
-
-    today = now_utc().date().isoformat()
-
-    if player["last_daily"] == today:
-        await update.message.reply_text(
-            "You already claimed today's reward.\n"
-            "Come back tomorrow!"
-        )
-        return
-
-    set_daily(
-        user.id,
-        chat.id,
-        today,
-    )
-
-    add_progress(
-        user.id,
-        chat.id,
-        xp=50,
-        coins=100,
-        points=25,
-    )
-
-    await update.message.reply_html(
-        "<b>Daily Reward Claimed!</b>\n\n"
-        "+50 XP\n"
-        "+100 Coins\n"
-        "+25 Points\n\n"
-        "Come back tomorrow for another reward!"
-    )
-
-
-async def protect(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    user = update.effective_user
-    chat = update.effective_chat
-
-    ensure_player(
-        user.id,
-        chat.id,
-        user.username,
-        user.full_name,
-    )
-
-    player = get_player(
-        user.id,
-        chat.id,
-    )
-
-    if not context.args:
-        await update.message.reply_html(
-            "<b>Protection</b>\n\n"
-            "Choose a protection duration:\n\n"
-            "/protect 1h — 149 Coins\n"
-            "/protect 12h — 500 Coins\n"
-            "/protect 24h — 900 Coins"
-        )
-        return
-
-    duration = context.args[0].lower()
-
-    prices = {
-        "1h": (1, 149),
-        "12h": (12, 500),
-        "24h": (24, 900),
-    }
-
-    if duration not in prices:
-        await update.message.reply_html(
-            "<b>Invalid protection duration.</b>\n\n"
-            "/protect 1h — 149 Coins\n"
-            "/protect 12h — 500 Coins\n"
-            "/protect 24h — 900 Coins"
-        )
-        return
-
-    hours, price = prices[duration]
-
-    if player["coins"] < price:
-        await update.message.reply_html(
-            "<b>Not enough coins.</b>\n\n"
-            f"Required: <b>{price}</b> coins\n"
-            f"Your coins: <b>{player['coins']}</b>"
-        )
-        return
-
-    current_protection = parse_time(
-        player["protected_until"]
-    )
-
-    current_time = now_utc()
-
-    if current_protection and current_protection > current_time:
-        await update.message.reply_html(
-            "<b>You are already protected.</b>\n\n"
-            f"Protection ends at:\n"
-            f"<code>{current_protection.isoformat()}</code>"
-        )
-        return
-
-    protected_until = current_time + timedelta(
-        hours=hours
-    )
-
-    add_progress(
-        user.id,
-        chat.id,
-        coins=-price,
-    )
-
-    set_protection(
-        user.id,
-        chat.id,
-        protected_until.isoformat(),
-    )
-
-    await update.message.reply_html(
-        "<b>Protection Activated</b>\n\n"
-        f"Duration: <b>{duration}</b>\n"
-        f"Cost: <b>{price} Coins</b>\n\n"
-        "Other players cannot kill you "
-        "while your protection is active."
-    )
-
-
-async def kill(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    user = update.effective_user
-    chat = update.effective_chat
-
-    ensure_player(
-        user.id,
-        chat.id,
-        user.username,
-        user.full_name,
-    )
-
-    killer = get_player(
-        user.id,
-        chat.id,
-    )
-
-    # Kill cooldown
-    last_kill = parse_time(
-        killer["last_kill"]
-    )
-
-    current_time = now_utc()
-
-    if last_kill:
-        next_kill = last_kill + timedelta(hours=24)
-
-        if next_kill > current_time:
-            remaining = next_kill - current_time
-
-            hours = remaining.seconds // 3600
-            minutes = (remaining.seconds % 3600) // 60
-
-            await update.message.reply_html(
-                "<b>Kill Cooldown Active</b>\n\n"
-                f"You can kill again in "
-                f"<b>{hours}h {minutes}m</b>."
-            )
+    # Ignore commands
+    if update.message and update.message.text:
+        if update.message.text.startswith("/"):
             return
 
-    # Target must be a replied message
-    if not update.message.reply_to_message:
-        await update.message.reply_html(
-            "<b>How to use /kill</b>\n\n"
-            "Reply to the player's message with:\n"
-            "<code>/kill</code>"
-        )
-        return
-
-    target_user = (
-        update.message.reply_to_message.from_user
+    ensure_user(
+        user_id=user.id,
+        username=user.username or "",
+        first_name=user.first_name or "",
     )
 
-    if not target_user:
+    # Register group member
+    if update.effective_chat and update.effective_chat.type in (
+        "group",
+        "supergroup",
+    ):
+        add_group_member(
+            update.effective_chat.id,
+            user.id,
+        )
+
+    remaining = cooldown_remaining(
+        user.id,
+        "message_xp",
+        XP_COOLDOWN,
+    )
+
+    if remaining > 0:
+        return
+
+    use_action(
+        user.id,
+        "message_xp",
+    )
+
+    increment_stat(
+        user.id,
+        "messages",
+    )
+
+    old_user = get_user(user.id)
+
+    old_level = (
+        old_user["level"]
+        if old_user
+        else 1
+    )
+
+    new_level, level_up = process_xp(
+        user.id,
+        XP_PER_MESSAGE,
+    )
+
+    if level_up and update.message:
+
         await update.message.reply_text(
-            "This user cannot be targeted."
+            f"🎉 <b>Level Up!</b>\n\n"
+            f"You reached <b>Level {new_level}</b>! ⭐",
+            parse_mode="HTML",
         )
+
+
+# ============================================================
+# /BATTLE
+# ============================================================
+
+async def battle_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+
+    user = update.effective_user
+
+    if not user or not update.message:
         return
 
-    if target_user.id == user.id:
+    ensure_user(
+        user.id,
+        user.username or "",
+        user.first_name or "",
+    )
+
+    remaining = cooldown_remaining(
+        user.id,
+        "battle",
+        BATTLE_COOLDOWN,
+    )
+
+    if remaining > 0:
+
         await update.message.reply_text(
-            "You cannot kill yourself."
+            f"⚔️ Your battle cooldown is active.\n"
+            f"Try again in <b>{remaining}s</b>.",
+            parse_mode="HTML",
         )
+
         return
 
-    if target_user.is_bot:
-        await update.message.reply_text(
-            "Bots cannot be targeted."
+    use_action(
+        user.id,
+        "battle",
+    )
+
+    increment_stat(
+        user.id,
+        "battles",
+    )
+
+    won = random.choice(
+        [True, False]
+    )
+
+    if won:
+
+        reward = random.randint(
+            BATTLE_MIN_REWARD,
+            BATTLE_MAX_REWARD,
         )
-        return
 
-    ensure_player(
-        target_user.id,
-        chat.id,
-        target_user.username,
-        target_user.full_name,
-    )
-
-    target = get_player(
-        target_user.id,
-        chat.id,
-    )
-
-    # Protection check
-    protected_until = parse_time(
-        target["protected_until"]
-    )
-
-    if protected_until and protected_until > current_time:
-        await update.message.reply_html(
-            f"<b>{target['name']}</b> is currently protected."
+        add_coins(
+            user.id,
+            reward,
         )
-        return
 
-    # Reward calculation
-    target_points = max(
-        0,
-        target["points"],
-    )
+        increment_stat(
+            user.id,
+            "wins",
+        )
 
-    target_coins = max(
-        0,
-        target["coins"],
-    )
+        process_xp(
+            user.id,
+            20,
+        )
 
-    if target_coins > 0:
-        reward_coins = target_coins
+        add_history(
+            user.id,
+            "battle",
+            "win",
+            reward,
+        )
+
+        text = (
+            "⚔️ <b>Battle Result</b>\n\n"
+            "🏆 You won the battle!\n\n"
+            f"💰 Reward: <b>+{reward} coins</b>\n"
+            "✨ XP: <b>+20</b>"
+        )
+
     else:
-        reward_coins = random.randint(
-            100,
-            200,
+
+        increment_stat(
+            user.id,
+            "losses",
         )
 
-    record_kill(
-        user.id,
-        chat.id,
-        target_user.id,
-        chat.id,
-        reward_coins,
-        target_points,
+        process_xp(
+            user.id,
+            5,
+        )
+
+        add_history(
+            user.id,
+            "battle",
+            "loss",
+            0,
+        )
+
+        text = (
+            "⚔️ <b>Battle Result</b>\n\n"
+            "💔 You lost the battle.\n\n"
+            "✨ XP: <b>+5</b>"
+        )
+
+    await update.message.reply_text(
+        text,
+        parse_mode="HTML",
     )
 
-    set_kill_time(
+
+# ============================================================
+# /HUNT
+# ============================================================
+
+async def hunt_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+
+    user = update.effective_user
+
+    if not user or not update.message:
+        return
+
+    ensure_user(
         user.id,
-        chat.id,
-        current_time.isoformat(),
+        user.username or "",
+        user.first_name or "",
     )
 
-    bonus_xp = random.randint(
-        30,
+    remaining = cooldown_remaining(
+        user.id,
+        "hunt",
+        HUNT_COOLDOWN,
+    )
+
+    if remaining > 0:
+
+        await update.message.reply_text(
+            f"🎯 Hunt cooldown is active.\n"
+            f"Try again in <b>{remaining}s</b>.",
+            parse_mode="HTML",
+        )
+
+        return
+
+    use_action(
+        user.id,
+        "hunt",
+    )
+
+    increment_stat(
+        user.id,
+        "hunts",
+    )
+
+    reward = random.randint(
+        HUNT_MIN_REWARD,
+        HUNT_MAX_REWARD,
+    )
+
+    add_coins(
+        user.id,
+        reward,
+    )
+
+    process_xp(
+        user.id,
+        10,
+    )
+
+    add_history(
+        user.id,
+        "hunt",
+        "success",
+        reward,
+    )
+
+    await update.message.reply_text(
+        "🎯 <b>Hunt Complete!</b>\n\n"
+        f"💰 Coins found: <b>+{reward}</b>\n"
+        "✨ XP gained: <b>+10</b>",
+        parse_mode="HTML",
+    )
+
+
+# ============================================================
+# /TRAIN
+# ============================================================
+
+async def train_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
+
+    user = update.effective_user
+
+    if not user or not update.message:
+        return
+
+    ensure_user(
+        user.id,
+        user.username or "",
+        user.first_name or "",
+    )
+
+    remaining = cooldown_remaining(
+        user.id,
+        "train",
         60,
     )
 
-    add_progress(
+    if remaining > 0:
+
+        await update.message.reply_text(
+            f"🏋️ Training cooldown is active.\n"
+            f"Try again in <b>{remaining}s</b>.",
+            parse_mode="HTML",
+        )
+
+        return
+
+    use_action(
         user.id,
-        chat.id,
-        xp=bonus_xp,
-    )
-
-    await update.message.reply_html(
-        "<b>Target Eliminated</b>\n\n"
-        f"Target: <b>{target['name']}</b>\n\n"
-        f"+{reward_coins} Coins\n"
-        f"+{target_points} Points\n"
-        f"+{bonus_xp} XP\n\n"
-        "Your next kill will be available "
-        "after 24 hours."
-    )
-
-
-async def train(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    user = update.effective_user
-    chat = update.effective_chat
-
-    ensure_player(
-        user.id,
-        chat.id,
-        user.username,
-        user.full_name,
+        "train",
     )
 
     xp = random.randint(
         10,
-        25,
+        30,
     )
 
-    coins = random.randint(
-        5,
-        15,
-    )
-
-    add_progress(
+    process_xp(
         user.id,
-        chat.id,
-        xp=xp,
-        coins=coins,
-        points=5,
+        xp,
     )
 
-    await update.message.reply_html(
-        "<b>Training Complete!</b>\n\n"
-        f"+{xp} XP\n"
-        f"+{coins} Coins\n"
-        "+5 Points"
+    add_history(
+        user.id,
+        "train",
+        "success",
+        0,
+    )
+
+    await update.message.reply_text(
+        "🏋️ <b>Training Complete!</b>\n\n"
+        f"✨ XP gained: <b>+{xp}</b>",
+        parse_mode="HTML",
     )
 
 
-async def explore(
+# ============================================================
+# /EXPLORE
+# ============================================================
+
+async def explore_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
-):
-    user = update.effective_user
-    chat = update.effective_chat
+) -> None:
 
-    ensure_player(
+    user = update.effective_user
+
+    if not user or not update.message:
+        return
+
+    ensure_user(
         user.id,
-        chat.id,
-        user.username,
-        user.full_name,
+        user.username or "",
+        user.first_name or "",
+    )
+
+    remaining = cooldown_remaining(
+        user.id,
+        "explore",
+        60,
+    )
+
+    if remaining > 0:
+
+        await update.message.reply_text(
+            f"🗺 Exploration cooldown is active.\n"
+            f"Try again in <b>{remaining}s</b>.",
+            parse_mode="HTML",
+        )
+
+        return
+
+    use_action(
+        user.id,
+        "explore",
     )
 
     locations = [
-        "Mystic Forest",
-        "Crystal Valley",
-        "Ancient Ruins",
-        "Moonlit Village",
-        "Sky Island",
+        "Ancient Forest",
+        "Mystic Valley",
+        "Forgotten Ruins",
+        "Shadow Mountains",
+        "Crystal Lake",
     ]
 
     location = random.choice(
         locations
     )
 
-    xp = random.randint(
-        15,
-        35,
-    )
-
-    coins = random.randint(
-        15,
+    reward = random.randint(
+        10,
         50,
     )
 
-    add_progress(
+    add_coins(
         user.id,
-        chat.id,
-        xp=xp,
-        coins=coins,
-        points=8,
+        reward,
     )
 
-    await update.message.reply_html(
-        "<b>Exploration Complete!</b>\n\n"
-        f"Location: <b>{location}</b>\n\n"
-        f"+{xp} XP\n"
-        f"+{coins} Coins\n"
-        "+8 Points"
+    process_xp(
+        user.id,
+        15,
+    )
+
+    add_history(
+        user.id,
+        "explore",
+        location,
+        reward,
+    )
+
+    await update.message.reply_text(
+        "🗺 <b>Exploration Complete!</b>\n\n"
+        f"📍 Location: <b>{location}</b>\n"
+        f"💰 Coins found: <b>+{reward}</b>\n"
+        "✨ XP gained: <b>+15</b>",
+        parse_mode="HTML",
+    )
+
+
+# ============================================================
+# PLUGIN SETUP
+# ============================================================
+
+def setup(application) -> None:
+    """Register all game handlers."""
+
+    application.add_handler(
+        CommandHandler(
+            "battle",
+            battle_command,
+        )
+    )
+
+    application.add_handler(
+        CommandHandler(
+            "hunt",
+            hunt_command,
+        )
+    )
+
+    application.add_handler(
+        CommandHandler(
+            "train",
+            train_command,
+        )
+    )
+
+    application.add_handler(
+        CommandHandler(
+            "explore",
+            explore_command,
+        )
+    )
+
+    # Message XP handler
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT
+            & ~filters.COMMAND,
+            message_xp,
+        )
     )
