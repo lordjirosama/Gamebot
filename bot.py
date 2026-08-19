@@ -1,199 +1,125 @@
 import logging
 
-from telegram import (
-    Update,
-    BotCommand,
-    BotCommandScopeAllGroupChats,
-    BotCommandScopeAllPrivateChats,
-)
+from telegram import BotCommand
 from telegram.ext import (
     Application,
     CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    filters,
 )
 
-from config import TOKEN
-from database import init_db
-
-from plugins.profile import (
-    profile,
-    stats,
-    coins,
-    level,
+from config import (
+    BOT_TOKEN,
+    BOT_NAME,
+    SET_COMMANDS,
 )
 
-from plugins.game import (
-    daily,
-    kill,
-    protect,
-    train,
-    explore,
-)
 
-from plugins.ranking import rank
-
-from plugins.admin import (
-    reset,
-    broadcast,
-)
-
-from plugins.help import (
-    help_cmd,
-    start,
-)
-
+# ============================================================
+# LOGGING
+# ============================================================
 
 logging.basicConfig(
-    format=(
-        "%(asctime)s | "
-        "%(levelname)s | "
-        "%(name)s | "
-        "%(message)s"
-    ),
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     level=logging.INFO,
 )
 
 logger = logging.getLogger("solurix")
 
 
-PLAYER_COMMANDS = [
+# ============================================================
+# TELEGRAM COMMAND MENU
+# ============================================================
+
+COMMANDS = [
     BotCommand("start", "Start Solurix"),
     BotCommand("help", "Show all commands"),
-
     BotCommand("profile", "View your profile"),
-    BotCommand("me", "View your profile"),
     BotCommand("stats", "View your statistics"),
+    BotCommand("rank", "View group ranking"),
+    BotCommand("daily", "Claim your daily reward"),
+    BotCommand("battle", "Start a battle"),
+    BotCommand("hunt", "Go on a hunt"),
+    BotCommand("train", "Train your character"),
+    BotCommand("explore", "Explore the world"),
     BotCommand("coins", "Check your coins"),
     BotCommand("level", "Check your level"),
-
-    BotCommand("daily", "Claim your daily reward"),
-    BotCommand("kill", "Eliminate another player"),
-    BotCommand("protect", "Activate protection"),
-    BotCommand("train", "Train and earn XP"),
-    BotCommand("explore", "Explore and find rewards"),
-
-    BotCommand("rank", "View group ranking"),
-    BotCommand("ranking", "View group leaderboard"),
 ]
 
 
-ADMIN_COMMANDS = PLAYER_COMMANDS + [
-    BotCommand("reset", "Reset this group's game data"),
-    BotCommand("broadcast", "Broadcast a message"),
-]
+# ============================================================
+# COMMAND SETUP
+# ============================================================
 
+async def setup_commands(application: Application) -> None:
+    """Register Telegram command suggestions."""
 
-async def setup_commands(
-    app: Application,
-):
-    await app.bot.set_my_commands(
-        PLAYER_COMMANDS,
-        scope=BotCommandScopeAllPrivateChats(),
-    )
+    if not SET_COMMANDS:
+        return
 
-    await app.bot.set_my_commands(
-        PLAYER_COMMANDS,
-        scope=BotCommandScopeAllGroupChats(),
-    )
+    await application.bot.set_my_commands(COMMANDS)
 
     logger.info(
-        "Telegram command menus configured."
+        "Telegram command menu configured for %s.",
+        BOT_NAME,
     )
 
 
-def main():
+# ============================================================
+# IMPORT PLUGINS
+# ============================================================
 
-    if not TOKEN:
-        raise RuntimeError(
-            "BOT_TOKEN is missing. "
-            "Put it in your .env file."
-        )
+def load_plugins(application: Application) -> None:
+    """
+    Load all Solurix plugins.
 
-    init_db()
+    Each plugin can expose a setup(application)
+    function. Missing plugins are skipped so the
+    bot can still start during development.
+    """
 
-    app = (
-        Application.builder()
-        .token(TOKEN)
-        .post_init(setup_commands)
-        .build()
-    )
+    plugin_names = [
+        "start",
+        "help",
+        "game",
+        "profile",
+        "ranking",
+        "daily",
+        "battle",
+        "hunt",
+        "admin",
+        "auto_reply",
+    ]
 
-    # Basic
-    app.add_handler(
-        CommandHandler("start", start)
-    )
+    for plugin_name in plugin_names:
+        try:
+            module = __import__(
+                f"plugins.{plugin_name}",
+                fromlist=["setup"],
+            )
 
-    app.add_handler(
-        CommandHandler("help", help_cmd)
-    )
+            setup = getattr(module, "setup", None)
 
-    # Profile
-    app.add_handler(
-        CommandHandler("profile", profile)
-    )
+            if setup is None:
+                logger.warning(
+                    "Plugin %s has no setup() function.",
+                    plugin_name,
+                )
+                continue
 
-    app.add_handler(
-        CommandHandler("me", profile)
-    )
+            setup(application)
 
-    app.add_handler(
-        CommandHandler("stats", stats)
-    )
+            logger.info(
+                "Loaded plugin: %s",
+                plugin_name,
+            )
 
-    app.add_handler(
-        CommandHandler("coins", coins)
-    )
+        except ModuleNotFoundError:
+            logger.warning(
+                "Plugin not found yet: %s",
+                plugin_name,
+            )
 
-    app.add_handler(
-        CommandHandler("level", level)
-    )
-
-    # Game
-    app.add_handler(
-        CommandHandler("daily", daily)
-    )
-
-    app.add_handler(
-        CommandHandler("kill", kill)
-    )
-
-    app.add_handler(
-        CommandHandler("protect", protect)
-    )
-
-    app.add_handler(
-        CommandHandler("train", train)
-    )
-
-    app.add_handler(
-        CommandHandler("explore", explore)
-    )
-
-    # Ranking
-    app.add_handler(
-        CommandHandler("rank", rank)
-    )
-
-    app.add_handler(
-        CommandHandler("ranking", rank)
-    )
-
-    # Admin
-    app.add_handler(
-        CommandHandler("reset", reset)
-    )
-
-    app.add_handler(
-        CommandHandler("broadcast", broadcast)
-    )
-
-    logger.info(
-        "Solurix is starting..."
-    )
-
-    app.run_polling(
-        allowed_updates=Update.ALL_TYPES
-    )
-
-
-if __name__ == "__main__":
-    main()
+        except Exception:
+            logger
