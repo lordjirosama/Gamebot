@@ -1,7 +1,10 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from database import reset_chat
+from database import (
+    reset_chat,
+    get_all_users,
+)
 
 
 async def is_admin(update: Update):
@@ -61,8 +64,37 @@ async def broadcast(
 
     message = " ".join(context.args)
 
-    await update.message.reply_text(
-        "Broadcast feature requires a global "
-        "user database before it can safely "
-        "send messages to all registered users."
+    users = get_all_users()
+
+    if not users:
+        await update.message.reply_text(
+            "There are no registered users yet."
+        )
+        return
+
+    status_message = await update.message.reply_text(
+        "Broadcast started..."
+    )
+
+    sent = 0
+    failed = 0
+
+    for row in users:
+        user_id = row["user_id"]
+
+        try:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=message,
+            )
+
+            sent += 1
+
+        except Exception:
+            failed += 1
+
+    await status_message.edit_text(
+        "Broadcast completed.\n\n"
+        f"Sent: {sent}\n"
+        f"Failed: {failed}"
     )
