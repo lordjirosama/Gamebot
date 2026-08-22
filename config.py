@@ -68,15 +68,15 @@ DB_PATH = os.getenv(
 # Add Telegram file_id later.
 # Leave empty for now.
 
-START_IMAGE = os.getenv("START_IMAGE", "").strip()
-HELP_IMAGE = os.getenv("HELP_IMAGE", "").strip()
-PROFILE_IMAGE = os.getenv("PROFILE_IMAGE", "").strip()
-RANKING_IMAGE = os.getenv("RANKING_IMAGE", "").strip()
-BATTLE_IMAGE = os.getenv("BATTLE_IMAGE", "").strip()
-DAILY_IMAGE = os.getenv("DAILY_IMAGE", "").strip()
-SHOP_IMAGE = os.getenv("SHOP_IMAGE", "").strip()
-QUEST_IMAGE = os.getenv("QUEST_IMAGE", "").strip()
-EVENT_IMAGE = os.getenv("EVENT_IMAGE", "").strip()
+START_IMAGE = os.getenv("START_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
+HELP_IMAGE = os.getenv("HELP_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
+PROFILE_IMAGE = os.getenv("PROFILE_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
+RANKING_IMAGE = os.getenv("RANKING_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
+BATTLE_IMAGE = os.getenv("BATTLE_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
+DAILY_IMAGE = os.getenv("DAILY_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
+SHOP_IMAGE = os.getenv("SHOP_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
+QUEST_IMAGE = os.getenv("QUEST_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
+EVENT_IMAGE = os.getenv("EVENT_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
 
 
 # ============================================================
